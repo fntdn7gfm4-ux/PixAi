@@ -11,6 +11,6 @@
  *    das políticas de Row Level Security do banco.
  */
 window.PIXAI_CONFIG = {
-  SUPABASE_URL: 'COLE_AQUI_A_PROJECT_URL_DO_SUPABASE',
+  SUPABASE_URL: 'https://fpgcxxbhiyxpfqsoadvh.supabase.co',
   SUPABASE_ANON_KEY: 'COLE_AQUI_A_CHAVE_ANON_PUBLIC',
 };
