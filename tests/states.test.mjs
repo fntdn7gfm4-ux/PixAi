@@ -1,4 +1,34 @@
-import test from 'node:test';import assert from 'node:assert/strict';
-import {transition,sandboxTimeline} from '../server/states.mjs';import {verifySignature} from '../server/security.mjs';
-test('autorização do cartão nunca permite saltar para concluído',()=>{assert.throws(()=>transition('PAYMENT_APPROVED','COMPLETED'));assert.throws(()=>transition('CREATED','PIX_SENT'));assert.equal(sandboxTimeline('pix_failed').at(-1),'PIX_FAILED');});
-test('verificador HMAC rejeita corpo alterado, assinatura inválida e timestamp antigo',async()=>{const secret='test-only-webhook-secret',raw='{"id":"event-1"}',ts=String(Date.now());const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);const mac=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(`${ts}.${raw}`));const sig=Buffer.from(mac).toString('hex');assert.equal(await verifySignature(raw,ts,sig,secret),true);assert.equal(await verifySignature(raw+' ',ts,sig,secret),false);assert.equal(await verifySignature(raw,ts,sig,secret,Number(ts)+300001),false);assert.equal(await verifySignature(raw,ts,'bad',secret),false);});
+import test from "node:test";
+import assert from "node:assert/strict";
+import { transition, sandboxTimeline } from "../server/states.mjs";
+import { verifySignature } from "../server/security.mjs";
+test("autorização do cartão nunca permite saltar para concluído", () => {
+  assert.throws(() => transition("PAYMENT_APPROVED", "COMPLETED"));
+  assert.throws(() => transition("CREATED", "PIX_SENT"));
+  assert.equal(sandboxTimeline("pix_failed").at(-1), "PIX_FAILED");
+});
+test("verificador HMAC rejeita corpo alterado, assinatura inválida e timestamp antigo", async () => {
+  const secret = "test-only-webhook-secret",
+    raw = '{"id":"event-1"}',
+    ts = String(Date.now());
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${ts}.${raw}`),
+  );
+  const sig = Buffer.from(mac).toString("hex");
+  assert.equal(await verifySignature(raw, ts, sig, secret), true);
+  assert.equal(await verifySignature(raw + " ", ts, sig, secret), false);
+  assert.equal(
+    await verifySignature(raw, ts, sig, secret, Number(ts) + 300001),
+    false,
+  );
+  assert.equal(await verifySignature(raw, ts, "bad", secret), false);
+});

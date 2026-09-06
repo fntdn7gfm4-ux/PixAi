@@ -6,4 +6,3 @@ dist/
 .local/
 *.tar.gz
 *.sqlite*
-
