@@ -1,56 +1,69 @@
-# Arquitetura — Pixaí
+# Arquitetura v2
 
-## Stack sugerida
-- **App**: React Native (Expo) — cobre iOS/Android com uma base; se preferirem nativo puro, Kotlin/Compose (Android) é a alternativa direta ao pedido original.
-- **Backend**: Node.js (NestJS ou Fastify) ou similar, API REST/GraphQL própria que orquestra os provedores abaixo — o app nunca fala direto com PSP/processadora.
-- **Banco de dados**: Postgres gerenciado (Supabase, Neon ou RDS).
-- **Autenticação**: Provedor gerenciado (Supabase Auth, AWS Cognito ou Auth0) — não implementar hashing/sessão do zero.
-- **Hospedagem**: Vercel/Railway (API), EAS Build (app), domínio próprio.
+## Aplicação
 
-## Subsistemas externos obrigatórios
+```text
+Navegador (public/) → /api/* (server/worker.mjs) → D1
+                               ↓
+                      Pricing Engine central
+                               ↓
+                     sandbox de dados fictícios
 
-| Subsistema | Função | Provedor sugerido | Onde entra no fluxo |
-|---|---|---|---|
-| Pix-as-a-Service | Enviar/receber Pix real, homologado no BACEN | Celcoin, Dock, QiTech, Matera, Stark Bank | Telas `pixkey`, `recipient`, `amount`, `processing` |
-| Tap to Pay / cobrança por aproximação | Celular como maquininha | GoPag (API/SDK white-label) | Fluxo de recebimento (fora das 35 telas atuais — a adicionar) |
-| Processadora de cartão | Cobrar/parcelar no cartão do pagador | Pagar.me, Stripe, Cielo API, Rede | Telas `payment`, `addcard`, `installments`, `review`, `auth` |
-| KYC / verificação de identidade | Confirmar identidade, prevenir fraude | idwall, CAF, Serpro Datavalid | Telas `cadastro`, `otp`, `kyc`, `kycstatus` |
-| LGPD / compliance | Proteção de dados, consentimento | Consultoria jurídica + política de privacidade | Cadastro + toda a base de dados pessoais |
-
-Nenhum desses pode ser "implementado" apenas com código — exigem cadastro comercial/jurídico com o provedor antes da integração técnica.
-
-## Estrutura de pastas sugerida
-```
-/app                    # React Native (Expo)
-  /screens              # uma pasta por tela, nomes conforme SCREENS.md
-  /components           # componentes reutilizáveis (Button, Input, Card, StatusPill)
-  /theme                # tokens.ts (cores, tipografia, espaçamento) — ver SCREENS.md
-  /navigation           # stack + tabs (ver TABS no protótipo)
-  /api                  # clientes HTTP para o backend próprio (nunca para PSP direto)
-/api                    # backend (NestJS/Fastify)
-  /modules/auth
-  /modules/users         # cadastro, KYC
-  /modules/pix           # integração Pix-as-a-Service
-  /modules/cards         # integração processadora + parcelamento
-  /modules/transactions   # histórico, comprovantes, estornos
+PSP / KYC / e-mail reais: NÃO CONECTADOS
 ```
 
-## Variáveis de ambiente (backend)
-```
-DATABASE_URL=
-AUTH_PROVIDER_KEY=
-PIX_PROVIDER_API_KEY=
-PIX_PROVIDER_WEBHOOK_SECRET=
-CARD_PROCESSOR_API_KEY=
-CARD_PROCESSOR_WEBHOOK_SECRET=
-KYC_PROVIDER_API_KEY=
-```
-Nunca commitar valores reais — usar `.env` + secret manager (Doppler, AWS Secrets Manager, etc).
+O frontend não possui taxas nem calcula o preço de uma cobrança. Cotações são criadas no servidor com UUID, expiração, sessão e revisão da configuração. A confirmação aceita apenas cotação, parcelamento, cenário e consentimento; não aceita totais, CPF, e-mail, chave Pix ou dados do cartão enviados pelo cliente.
 
-## Design tokens (extraídos do protótipo)
-- Cor primária: `#1769FF` · texto principal: `#101828` · texto secundário: `#5A6579` · texto mudo: `#8792A6`
-- Fundo app: `#F7F9FC` · fundo card: `#fff` · borda: `#E6EBF3` / `#EBF0F8`
-- Sucesso: `#0F9D63` / `#E7F7EF` · erro: `#D14343` / `#FFF6F6`
-- Tipografia: Manrope, pesos 400–800; títulos de tela `800 26-32px`, corpo `500 14.5-15px`
-- Raio: 14px (inputs), 18-22px (cards), 999px (pills/badges)
-- Animações: fade/slide de entrada ~0.2-0.3s ease-out (`riseIn`, `scrIn`), sem exageros
+## Modelo de dados
+
+- `settings`: configuração validada e revisão para concorrência otimista.
+- `sessions`: identificadores aleatórios, expiração em 24 horas.
+- `quotes`: preço emitido, sessão, expiração e versão dos preços.
+- `operations`: operações **sandbox**, cotação e chave de idempotência únicas, hash da requisição, estados e valores.
+- `challenges`: digest do código, validade, tentativas e consumo atômico.
+- `audit`: ações administrativas, confirmações e consultas. Sem dados pessoais ou cartão.
+- `rate_limits`: contadores atômicos persistentes por IP resumido e sessão.
+- `webhook_events`: tabela preparada; nenhum webhook externo é aceito até implementar o formato e a validação do parceiro.
+
+O banco publicado é D1. A configuração inicial de preços é definida em um único módulo do servidor e persistida quando o administrador a edita. Não há cadastro tradicional nem integração com o Supabase antigo. O esquema Drizzle só cria tabelas desta nova aplicação. Dados legados permanecem intactos.
+
+## Precificação
+
+Dinheiro em centavos e taxas em ppm. O motor calcula:
+
+```text
+lucro-alvo = max(teto(Pix × margem mínima), lucro mínimo absoluto)
+total-mínimo = teto((Pix + lucro-alvo + custo fixo gateway + custo operacional)
+                    / (1 − taxa gateway − tributos − reserva antifraude))
+parcela = teto comercial para terminação 0,90, nunca para baixo
+total = parcela × quantidade
+```
+
+Gateway, tributos e reserva são arredondados individualmente para cima. Se o lucro em centavos ficar abaixo do alvo, a parcela sobe novamente. A taxa oficial aceita pelo motor tem precedência sobre a tabela de referência; ainda não existe API de PSP conectada que forneça tal taxa.
+
+## Estados
+
+`CREATED → AWAITING_PAYMENT → PROCESSING_PAYMENT → PAYMENT_APPROVED → PIX_PROCESSING → PIX_SENT → COMPLETED`.
+
+Recusa, análise, falha Pix, estorno e chargeback possuem transições explícitas em `server/states.mjs`. Em sandbox, o cenário escolhido exercita a sequência sem fazer chamadas financeiras. Não existe autorização real nem execução automática de Pix.
+
+## Contrato futuro do adaptador oficial
+
+Antes de habilitar homologação, o adaptador escolhido deverá implementar e testar:
+
+1. Cotação oficial: custo por parcelamento, custo fixo, validade, instituição responsável e campos legais/CET aplicáveis.
+2. Identificação: e-mail real verificado, CPF/CNPJ conforme a operação, validação KYC, titularidade, identificação do recebedor e consulta de chave conforme o parceiro.
+3. Checkout tokenizado: campos hospedados/SDK oficial; PAN e CVV nunca passam pelo nosso backend; autenticação 3DS e resultado de antifraude quando aplicáveis.
+4. Cobrança após confirmação explícita: idempotência também no PSP, referência da operação e captura/estado definitivo reconciliado.
+5. Liberação de Pix: apenas após satisfação das regras contratuais; beneficiário validado, saldo/funding e idempotência própria. Aprovação do cartão não basta para concluir o Pix.
+6. Webhook: verificar assinatura oficial sobre bytes originais, timestamp, evento único, vínculo da conta/ambiente, IDs, valores, moeda e ordem permitida de estados. Persistir antes de confirmar recebimento; conciliar em caso de evento ausente ou fora de ordem.
+7. Compensação: consulta de estado antes de repetir chamada incerta, estorno, chargeback, fila de revisão e reconciliação de liquidação/antecipação.
+8. E-mail transacional: outbox persistente, envio idempotente de comprovante e OTP, segredo do desafio, limites por identidade, expiração, consumo único e sessão limitada à operação verificada.
+
+## Ambientes
+
+`APP_ENV=sandbox` é o único modo executável nesta entrega e aceita somente fixtures. `homologation` e `production` retornam 503 nas operações da aplicação, mesmo se houver chaves no ambiente. O health informa `paymentsEnabled=false` em todos os casos. Após a integração, serão necessários projetos, bancos e segredos separados; nunca promover transações de demonstração ao livro de operações reais.
+
+## Limites desta entrega
+
+Não há tokenização, KYC/AML, fingerprinting comercial, limite por CPF/cartão/chave real, fila operacional, envio de e-mail, auditoria imutável, conciliação de PSP ou monitoramento de chargeback ativos. A chave administrativa estática é apropriada somente a este teste restrito; produção exige identidade administrativa, MFA, permissões e rotação. Os dados de teste persistem sem rotina de expurgo automática; definir retenção e limpeza antes de ampliar o uso.

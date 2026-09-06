@@ -1,46 +1,26 @@
-# Plano de implementação — para o agente de coding
+# Estado da entrega e caminho para produção
 
-Execute em ordem. Cada etapa deve compilar/rodar antes de seguir para a próxima.
+## Concluído
 
-## 0. Setup
-- [ ] Criar repositório (app + api, monorepo ou dois repos)
-- [ ] Scaffold Expo (React Native) + scaffold NestJS/Fastify
-- [ ] Configurar `.env` local com placeholders das chaves em `ARCHITECTURE.md`
-- [ ] Configurar Postgres (local via docker-compose para dev)
+- [x] Substituir runtime legado e cadastro com senha pela jornada web de teste sem conta.
+- [x] Implementar Pricing Engine backend, ofertas, outro valor, margem e arredondamento.
+- [x] Persistir configurações, cotações, operações simuladas, sessões e auditoria.
+- [x] Recalcular ao confirmar; aplicar idempotência e validade da cotação.
+- [x] Exercitar sucesso, cartão recusado, análise e falha Pix sem movimentação financeira.
+- [x] Criar recibo de teste e consulta por desafio limitado à sessão.
+- [x] Painel administrativo, preços e preparação de configurações de parceiros.
+- [x] Adicionar logo oficial e documentar limitações.
+- [x] Testes de preços, estados, segurança de API e cenários.
 
-## 1. Design system
-- [ ] Criar `theme/tokens.ts` com as cores, tipografia (Manrope) e espaçamentos de `SCREENS.md`
-- [ ] Componentes base: Button (primário/secundário), Input (com estados foco/erro/sucesso), Card, Pill/Badge, TabBar
+## Exige parceiro e homologação — não implementado como serviço real
 
-## 2. Autenticação e cadastro (sem dependências externas ainda)
-- [ ] Telas: Splash, Onboarding, Login, Criar conta, Código SMS — navegação e UI, sem backend real ainda (mock)
-- [ ] Integrar provedor de autenticação (Cognito/Auth0/Supabase Auth) — cadastro e login reais
-- [ ] Persistir usuário no Postgres
-
-## 3. KYC
-- [ ] Telas: Verificação de identidade, Estados da verificação
-- [ ] Integrar provedor de KYC escolhido — chamar na etapa de confirmação de CPF, tratar pendente/aprovado/reprovado
-
-## 4. Conta e cartões (sem dinheiro real)
-- [ ] Home, Meus cartões, Adicionar cartão — CRUD de cartões via processadora (tokenização, nunca guardar PAN)
-- [ ] Perfil, Notificações, Central de Segurança, Suporte — CRUD simples
-
-## 5. Fluxo Pix no cartão (núcleo do produto)
-- [ ] Hub do Pix → Chave Pix → Destinatário → Valor — mock de consulta de chave, depois integrar Pix-as-a-Service
-- [ ] Escolher cartão → Parcelamento → Revisão → Autenticação — integrar processadora de cartão (cobrança/parcelamento)
-- [ ] Processando → sucesso/erro — orquestrar backend: debitar cartão, disparar Pix, tratar timeout/falha
-- [ ] Telas de erro: Cartão não autorizado, Limite insuficiente, Transação em análise, Pix não concluído, Acompanhar estorno
-
-## 6. Histórico
-- [ ] Transações, Detalhe da transação, Estado vazio, Comprovante (compartilhável/PDF)
-
-## 7. Endurecimento
-- [ ] Webhooks dos provedores (Pix, cartão) com verificação de assinatura
-- [ ] Rate limiting e logs de auditoria na API
-- [ ] Revisão LGPD: consentimento no cadastro, política de privacidade, endpoint de exclusão de dados
-- [ ] Testes automatizados: fluxo feliz + cada tela de erro
-
-## 8. Antes de produção
-- [ ] Confirmar com jurídico/compliance a licença/parceria necessária para operar Pix e custódia de saldo
-- [ ] Auditoria de segurança (pentest) antes de aceitar transações reais
-- [ ] Build de release (EAS) e publicação nas lojas
+- [ ] Aprovação comercial do modelo cartão → Pix e definição da instituição responsável.
+- [ ] Adaptador oficial de cartão/Pix, taxas reais, funding, tokenização e 3DS.
+- [ ] KYC/AML, identificação real, validação do destinatário e antifraude.
+- [ ] OTP real por e-mail, comprovante automático e outbox idempotente.
+- [ ] Webhooks oficiais assinados, proteção contra replay e conciliação.
+- [ ] Limites por CPF, token de cartão, dispositivo, chave Pix e recebedor.
+- [ ] Revisão manual operacional, chargebacks, estornos e compensações.
+- [ ] Ambientes isolados de homologação e produção, backups e observabilidade.
+- [ ] Política LGPD final, identidade administrativa com MFA e avaliação jurídica/CET.
+- [ ] Pentest e testes fim a fim com as APIs oficiais antes de movimentar valores reais.

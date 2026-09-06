@@ -1,85 +1,57 @@
-# Pixaí — App Fintech (Pix no Cartão)
+# PixAI / Pixaí — plataforma de avaliação
 
-Site real, publicado no GitHub Pages, com login e cadastro de verdade
-(contas reais via Supabase Auth + Postgres). O restante do fluxo (Pix,
-cartão, KYC) é **simulado de propósito** — ver "O que é real vs. simulado"
-abaixo e o aviso regulatório em `ARCHITECTURE.md`.
+Nova experiência web para Pix pago no cartão, sem conta ou senha tradicional.
 
-## Arquivos deste repositório
+**Teste online:** https://pixai-teste.offlucas.chatgpt.site/
 
-| Arquivo | O que é |
-|---|---|
-| `index.html` | O site real. Login/cadastro/logout via Supabase; cartões e histórico salvos por conta. É o que roda no GitHub Pages. |
-| `support.js` | Runtime que faz `index.html` funcionar como app (interpreta `{{ variável }}`, `<sc-if>`, `<sc-for>` e liga a lógica da tela). |
-| `config.js` | Onde você cola a URL + chave do seu projeto Supabase (ver "Configurar o backend" abaixo). |
-| `supabase/schema.sql` | Script para rodar uma vez no seu projeto Supabase — cria as tabelas `profiles`/`cards`/`transactions` com Row Level Security. |
-| `Pixaí.dc.html` | O protótipo visual **original**, sem lógica real — mantido como referência de design (as 35 telas, cores, tipografia e cópia originais). Não é o que está no ar. |
-| `ARCHITECTURE.md`, `SCREENS.md`, `TASKS.md` | Documentação original do handoff de design (stack sugerida, lista das 35 telas, plano de implementação). |
+**Estado:** sandbox funcional com servidor e banco persistente. Não é uma operação financeira em produção. Não há cobrança, Pix, KYC, 3DS ou e-mail reais. Os formulários usam dados fictícios e a API rejeita campos de cartão/documento.
 
-## Configurar o backend (Supabase) — necessário para login/cadastro funcionarem
+## O que funciona
 
-1. Crie um projeto gratuito em [supabase.com](https://supabase.com).
-2. Abra **SQL Editor** no projeto e rode o conteúdo de `supabase/schema.sql`.
-3. Em **Authentication > Providers > Email**, desative **"Confirm email"**.
-   O app faz login com um e-mail sintético gerado a partir do CPF (ex.:
-   `cpf12345678900@usuarios.pixai.app`), que não existe de verdade — não
-   há como confirmar por e-mail, e sem esse passo o cadastro trava.
-4. Em **Project Settings > API**, copie a **Project URL** e a chave
-   **anon public**, e cole no arquivo `config.js`.
-5. Commit + push. O GitHub Pages já está configurado neste repositório e
-   republica automaticamente a cada push na `main`.
+- Home com as quatro ofertas solicitadas, outro valor e opções de 1 a 12 parcelas.
+- Pricing Engine exclusivo do servidor, dinheiro em centavos, taxas em partes por milhão e aritmética inteira. Margem mínima de 30%, piso de lucro, arredondamento para cima em parcelas terminadas em R$ 0,90 e conferência dos custos arredondados individualmente.
+- Revisão explícita antes da simulação; cotação de dez minutos, vinculada à sessão e à versão dos preços, recalculada ao confirmar.
+- Cenários de aprovação, recusa, revisão manual e cartão aprovado com falha no Pix. Recibo identificável e exportável como texto.
+- Consulta com desafio de uso único, expiração, limite de tentativas e isolamento por sessão. **O código aparece na tela: não é OTP por e-mail nem autenticação de produção.**
+- Painel administrativo protegido por segredo do servidor, métricas de teste, edição persistente de preços e área de integrações.
+- Cookie HttpOnly/Secure/SameSite, CSP, validação de origem, SQL parametrizado, rate limiting persistente, idempotência, trilha de auditoria e bloqueio de todas as rotas financeiras reais.
+- Logo oficial original preservada em `public/assets/pixai-logo-oficial.png` e usada no cabeçalho, rodapé e recibo visual.
 
-A chave "anon public" é pública por design (fica no código do navegador) —
-quem protege os dados de cada usuário são as políticas de Row Level
-Security do `schema.sql`, não o sigilo da chave.
+## Executar localmente
 
-## O que é real vs. simulado
+Requer Node.js 24 ou superior.
 
-**Real:**
-- Cadastro cria uma conta de verdade (Supabase Auth, senha com hash no
-  servidor, nunca em texto puro).
-- Login valida a senha de verdade contra essa conta.
-- Sessão persiste entre recarregamentos da página (fecha e abre o
-  navegador e continua logado).
-- Toda tela do app (Início, Cartões, Transações etc.) exige login —
-  tentar acessar direto pela barra lateral sem sessão redireciona pro
-  login.
-- Cartões adicionados e o histórico de Pix "enviados" são salvos de
-  verdade no banco, por conta — cada usuário só vê os próprios dados.
+```sh
+npm ci
+cp .env.example .env
+# Gere ADMIN_TOKEN aleatório com pelo menos 32 caracteres em .env.
+npm run dev
+```
 
-**Simulado (de propósito — ver aviso abaixo):**
-- Envio de Pix e cobrança no cartão: o fluxo roda inteiro (valor digitado,
-  parcelamento calculado, histórico gravado), mas nenhum dinheiro se move
-  de fato.
-- Verificação de identidade (OTP/KYC): telas clicáveis, sem envio real de
-  SMS nem checagem de documento.
-- Número completo do cartão e CVV nunca são pedidos para armazenamento —
-  só bandeira, últimos 4 dígitos e nome impresso ficam salvos.
+Acesse `http://127.0.0.1:4173`. SQLite local fica em `.local/pixai.sqlite`, fora do Git. Na instalação feita nesta máquina, `.env` já contém a chave administrativa aleatória. Nunca compartilhe ou commite esse arquivo.
 
-### Por que não é tudo real
-Pix de verdade e custódia de saldo exigem ligação com uma instituição de
-pagamento autorizada pelo Banco Central. Cobrança no cartão exige
-processadora certificada PCI-DSS — dados de cartão nunca devem ficar em
-servidor próprio. KYC e LGPD exigem provedor especializado e política de
-privacidade real. Nada disso é implementável só com código — ver
-`ARCHITECTURE.md` para a lista de parceiros sugeridos, e validar com
-jurídico/compliance antes de aceitar transações reais de usuários.
+```sh
+npm test
+npm run build
+npm run db:generate
+```
 
-## Limitações conhecidas (próximos passos, se for adiante)
-- O destinatário do Pix é sempre o mesmo contato de exemplo ("Mariana
-  Alves") — não há busca real de chave Pix.
-- A tela de detalhe de uma transação (`txdetail`) mostra dados ilustrativos,
-  não os da transação real clicada.
-- "Definir como principal" e "Remover cartão" na tela Meus Cartões ainda
-  são apenas visuais.
-- "Esqueci minha senha" foi removido por não haver fluxo de recuperação
-  real ainda.
+Os testes cobrem margem, ofertas, arredondamento, taxas do parceiro, idempotência, consentimento, sessões isoladas, códigos expirados/usados, cenários, conflitos de preços, bloqueio de produção e proteção de rotas. A geração de migrações é necessária apenas após mudar `db/schema.ts`; não reescreva migrações já publicadas.
 
-## Ordem de leitura recomendada (documentação original do handoff)
-1. `ARCHITECTURE.md` — stack, subsistemas externos obrigatórios, variáveis de ambiente, estrutura de pastas
-2. `SCREENS.md` — as 35 telas, agrupadas por fluxo, com design tokens e cópia exata
-3. `TASKS.md` — checklist de implementação original (pré-integração com Supabase)
-4. `Pixaí.dc.html` — protótipo visual original, sem lógica
+## Administração
 
-## Assets
-Fonte: Google Fonts "Manrope" (400/500/600/700/800). Sem imagens externas — ícones e ilustrações são divs/CSS (substituir por ícones SVG reais numa implementação nativa).
+Abra `/#admin` no site e informe o valor de `ADMIN_TOKEN` configurado no servidor. No ambiente local desta entrega, ele está no arquivo `.env`, que é ignorado pelo Git. O token não é pré-preenchido, incluído em URLs nem salvo no navegador. Encerrar o acesso ou fechar a aba remove a credencial da memória.
+
+Os percentuais do painel são apresentados em %. Internamente, 30% = 300000 ppm. Novos preços invalidam cotações anteriores. As ofertas são pisos comerciais: o motor pode elevar a parcela para preservar a margem. Reduzir a margem abaixo de 30% é proibido. Custos iniciais zerados não significam isenção tributária ou custo real zero.
+
+## Publicação
+
+Frontend e API compartilham a origem no Sites, com Worker e D1. `.openai/hosting.json` guarda somente o identificador do projeto e o nome lógico de D1. O build gera `dist/client`, `dist/server/index.js` e migrações em `dist/.openai/drizzle`.
+
+O GitHub Pages não executa o backend. O `index.html` da raiz encaminha para o novo site. A aplicação publicada usa `public/index.html`. O CI verifica testes e build; a publicação do Worker é feita pelo Sites a partir de uma versão salva, sem segredos no repositório.
+
+## Próximos passos para operações reais
+
+Consulte [PARTNERS.md](PARTNERS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md) e [TASKS.md](TASKS.md). Não há interruptor que transforme esta demonstração em operação real apenas inserindo chaves. É necessário implementar o adaptador oficial do parceiro escolhido, testar e homologar.
+
+O código antigo, documentação e esquema Supabase foram preservados em `docs/legacy`. **Não aplique o esquema antigo e não reative seu runtime**: ele permitia histórico simulado controlado pelo cliente. Os dados existentes do Supabase não foram acessados, alterados nem excluídos.
