@@ -12,5 +12,5 @@
  */
 window.PIXAI_CONFIG = {
   SUPABASE_URL: 'https://fpgcxxbhiyxpfqsoadvh.supabase.co',
-  SUPABASE_ANON_KEY: 'COLE_AQUI_A_CHAVE_ANON_PUBLIC',
+  SUPABASE_ANON_KEY: 'sb_publishable_IVYm4858NSKv0Xk8VeShMA_KvMGB-3x',
 };
