@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#E9EDF4;font-family:Manrope,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#1769FF;text-decoration:none}
+a:hover{color:#0F4FCC}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes scrIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulseDot{0%,100%{opacity:.28}50%{opacity:1}}
+@keyframes pop{0%{transform:scale(.5);opacity:0}62%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes drawIn{to{stroke-dashoffset:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:220px 0}}
+@keyframes riseIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div style="display:flex;height:100vh;width:100%;overflow:hidden">
+
+  <sc-if value="{{ showIndex }}" hint-placeholder-val="{{ true }}">
+  <aside style="width:250px;flex:none;height:100%;overflow-y:auto;background:#fff;border-right:1px solid #E4E9F2;padding:22px 14px 48px">
+    <div style="display:flex;align-items:center;gap:9px;padding:0 8px 4px">
+      <div style="width:26px;height:26px;border-radius:9px;background:#1769FF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:9px;background:#fff;transform:rotate(45deg);border-radius:2px"></div></div>
+      <div style="font:800 17px/1 Manrope;color:#101828;letter-spacing:-.02em">pixaí</div>
+    </div>
+    <div style="padding:8px 8px 2px;font:500 11px/1.5 Manrope;color:#98A2B3">Protótipo · 35 telas</div>
+    <sc-for list="{{ nav }}" as="it" hint-placeholder-count="16">
+      <sc-if value="{{ it.isGroup }}">
+        <div style="font:800 9.5px/1 Manrope;letter-spacing:.14em;text-transform:uppercase;color:#B0BAC9;padding:20px 10px 8px">{{ it.label }}</div>
+      </sc-if>
+      <sc-if value="{{ it.isItem }}">
+        <div onClick="{{ it.go }}" style="{{ it.style }}" style-hover="background:#EEF3FD;color:#1769FF">{{ it.label }}</div>
+      </sc-if>
+    </sc-for>
+  </aside>
+  </sc-if>
+
+  <main style="flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:36px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div style="width:390px;height:844px;border-radius:46px;background:#F7F9FC;overflow:hidden;position:relative;flex:none;box-shadow:0 34px 80px rgba(16,24,40,.24),0 3px 10px rgba(16,24,40,.08)">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:16px 28px 0;z-index:40;pointer-events:none;color:{{ barColor }}">
+          <div style="font:700 14px/1 Manrope;letter-spacing:-.01em">9:41</div>
+          <div style="display:flex;align-items:flex-end;gap:5px">
+            <div style="display:flex;align-items:flex-end;gap:2px"><div style="width:3px;height:4px;border-radius:1px;background:currentColor"></div><div style="width:3px;height:6px;border-radius:1px;background:currentColor"></div><div style="width:3px;height:8px;border-radius:1px;background:currentColor"></div><div style="width:3px;height:10px;border-radius:1px;background:currentColor"></div></div>
+            <div style="width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;padding:1.4px;opacity:.9"><div style="width:70%;height:100%;background:currentColor;border-radius:1px"></div></div>
+          </div>
+        </div>
+
+        <sc-if value="{{ s_splash }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#0B1B3F 0%,#123A9E 52%,#1769FF 100%)">
+    <div style="display:flex;align-items:center;gap:13px;animation:pop .6s cubic-bezier(.2,.8,.3,1) both">
+      <div style="width:44px;height:44px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center"><div style="width:16px;height:16px;background:#1769FF;transform:rotate(45deg);border-radius:3px"></div></div>
+      <div style="font:800 38px/1 Manrope;color:#fff;letter-spacing:-.035em">pixaí</div>
+    </div>
+    <div style="font:600 14px/1 Manrope;color:rgba(255,255,255,.72);animation:fadeIn .8s .3s both">Envie Pix. Pague no cartão.</div>
+    <div style="position:absolute;bottom:78px;display:flex;gap:6px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:pulseDot 1.1s 0s infinite"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:pulseDot 1.1s .18s infinite"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:pulseDot 1.1s .36s infinite"></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_ob }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="display:flex;justify-content:flex-end;padding:56px 22px 0">
+      <div onClick="{{ goto_cadastro }}" style="font:700 13px/1 Manrope;color:#8792A6;cursor:pointer;padding:6px" style-hover="color:#1769FF">Pular</div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:8px 26px 0">
+      <sc-if value="{{ ob0 }}">
+        <div style="animation:riseIn .3s ease-out">
+          <div style="height:250px;display:flex;align-items:center;justify-content:center;position:relative">
+            <div style="width:212px;height:134px;border-radius:18px;background:linear-gradient(140deg,#101828,#2B3A5C);transform:rotate(-8deg);box-shadow:0 20px 40px rgba(16,24,40,.24);padding:16px;display:flex;flex-direction:column;justify-content:space-between">
+              <div style="width:30px;height:22px;border-radius:5px;background:rgba(255,255,255,.28)"></div>
+              <div style="font:700 15px/1 Manrope;color:#fff;letter-spacing:.14em">•••• 4821</div>
+            </div>
+            <div style="position:absolute;right:52px;bottom:44px;width:64px;height:64px;border-radius:20px;background:#1769FF;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(23,105,255,.4)"><div style="width:24px;height:24px;background:#fff;transform:rotate(45deg);border-radius:4px"></div></div>
+          </div>
+          <div style="font:800 32px/1.12 Manrope;color:#101828;letter-spacing:-.035em;text-wrap:pretty">Pix no cartão.<br>Simples assim.</div>
+          <div style="font:500 15px/1.55 Manrope;color:#5A6579;margin-top:14px;text-wrap:pretty">Envie um Pix agora e pague usando seu cartão de crédito.</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ ob1 }}">
+        <div style="animation:riseIn .3s ease-out">
+          <div style="font:800 32px/1.12 Manrope;color:#101828;letter-spacing:-.035em;margin-top:26px">Seu Pix chega na hora</div>
+          <div style="font:500 15px/1.55 Manrope;color:#5A6579;margin-top:12px;text-wrap:pretty">O destinatário recebe normalmente pela chave Pix informada.</div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:34px">
+            <div style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:18px;background:#F7F9FC;border:1px solid #EBF0F8">
+              <div style="width:34px;height:34px;flex:none;border-radius:11px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px/1 Manrope">1</div>
+              <div style="font:700 15px/1.3 Manrope;color:#101828">Você informa o Pix</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:18px;background:#F7F9FC;border:1px solid #EBF0F8">
+              <div style="width:34px;height:34px;flex:none;border-radius:11px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px/1 Manrope">2</div>
+              <div style="font:700 15px/1.3 Manrope;color:#101828">Escolhe o cartão</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:18px;background:#EEF3FD;border:1px solid #D6E3FB">
+              <div style="width:34px;height:34px;flex:none;border-radius:11px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px/1 Manrope">3</div>
+              <div style="font:700 15px/1.3 Manrope;color:#101828">O destinatário recebe</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ ob2 }}">
+        <div style="animation:riseIn .3s ease-out">
+          <div style="font:800 32px/1.12 Manrope;color:#101828;letter-spacing:-.035em;margin-top:26px">Escolha como pagar</div>
+          <div style="font:500 15px/1.55 Manrope;color:#5A6579;margin-top:12px;text-wrap:pretty">Pague à vista ou parcele no cartão quando disponível.</div>
+          <div style="margin-top:28px;border-radius:22px;background:#F7F9FC;border:1px solid #EBF0F8;padding:20px">
+            <div style="font:700 11px/1 Manrope;letter-spacing:.1em;text-transform:uppercase;color:#8792A6">Pix enviado</div>
+            <div style="font:800 30px/1 Manrope;color:#101828;letter-spacing:-.03em;margin-top:10px">R$ 1.000,00</div>
+            <div style="height:1px;background:#E4EAF4;margin:18px 0"></div>
+            <div style="font:700 11px/1 Manrope;letter-spacing:.1em;text-transform:uppercase;color:#8792A6">Pagamento no cartão</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:14px;background:#fff;border:1.5px solid #E6EBF3"><div style="font:700 15px/1 Manrope;color:#101828">1x de R$ 1.039,90</div><div style="font:600 12px/1 Manrope;color:#8792A6">à vista</div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:14px;background:#fff;border:2px solid #1769FF"><div style="font:700 15px/1 Manrope;color:#1769FF">6x de R$ 184,70</div><div style="font:600 12px/1 Manrope;color:#8792A6">parcelado</div></div>
+            </div>
+          </div>
+          <div style="font:500 12.5px/1.5 Manrope;color:#8792A6;margin-top:14px">Taxas e condições são apresentadas antes da confirmação.</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ ob3 }}">
+        <div style="animation:riseIn .3s ease-out">
+          <div style="font:800 32px/1.12 Manrope;color:#101828;letter-spacing:-.035em;margin-top:26px">Segurança em cada transação</div>
+          <div style="display:flex;flex-direction:column;gap:2px;margin-top:26px">
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid #EEF1F7"><div style="width:30px;height:30px;flex:none;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:5px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:600 15px/1.3 Manrope;color:#101828">Proteção antifraude</div></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid #EEF1F7"><div style="width:30px;height:30px;flex:none;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:5px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:600 15px/1.3 Manrope;color:#101828">Verificação de identidade</div></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid #EEF1F7"><div style="width:30px;height:30px;flex:none;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:5px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:600 15px/1.3 Manrope;color:#101828">Autenticação segura</div></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 0"><div style="width:30px;height:30px;flex:none;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:5px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:600 15px/1.3 Manrope;color:#101828">Dados protegidos</div></div>
+          </div>
+          <div style="margin-top:22px;padding:16px;border-radius:16px;background:#F7F9FC;border:1px solid #EBF0F8;font:500 12.5px/1.55 Manrope;color:#5A6579;text-wrap:pretty">Pagamentos processados por parceiros certificados PCI-DSS. A Pixaí não armazena os dados do seu cartão.</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:18px 26px 34px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:6px;justify-content:center;padding-bottom:4px">
+        <sc-for list="{{ obDots }}" as="d" hint-placeholder-count="4"><div onClick="{{ d.go }}" style="{{ d.style }}"></div></sc-for>
+      </div>
+      <sc-if value="{{ ob3 }}">
+        <div onClick="{{ goto_cadastro }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Criar minha conta</div>
+        <div onClick="{{ goto_login }}" style="height:48px;display:flex;align-items:center;justify-content:center;font:700 15px/1 Manrope;color:#1769FF;cursor:pointer">Já tenho conta</div>
+      </sc-if>
+      <sc-if value="{{ obNotLast }}">
+        <div onClick="{{ obNext }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Começar</div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_login }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="flex:1;overflow-y:auto;padding:88px 26px 0">
+      <div style="width:44px;height:44px;border-radius:15px;background:#1769FF;display:flex;align-items:center;justify-content:center"><div style="width:16px;height:16px;background:#fff;transform:rotate(45deg);border-radius:3px"></div></div>
+      <div style="font:800 30px/1.12 Manrope;color:#101828;letter-spacing:-.035em;margin-top:26px">Bem-vindo de volta</div>
+      <div style="font:500 15px/1.5 Manrope;color:#5A6579;margin-top:10px">Entre para continuar enviando Pix no cartão.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:32px">
+        <div>
+          <div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:8px">CPF</div>
+          <div style="height:54px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">123.456.789-00</div>
+        </div>
+        <div>
+          <div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:8px">Senha</div>
+          <div style="height:54px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font:600 15px/1 Manrope;color:#101828;letter-spacing:.2em">••••••••<div style="font:700 12px/1 Manrope;color:#1769FF;letter-spacing:0;cursor:pointer">Mostrar</div></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px"><div style="font:700 13px/1 Manrope;color:#1769FF;cursor:pointer">Esqueci minha senha</div></div>
+    </div>
+    <div style="padding:18px 26px 34px;display:flex;flex-direction:column;gap:12px">
+      <div onClick="{{ goto_home }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Entrar</div>
+      <div onClick="{{ goto_home }}" style="height:54px;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;gap:10px;font:700 15px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC"><div style="width:18px;height:18px;border:2px solid #101828;border-radius:6px"></div>Entrar com biometria</div>
+      <div onClick="{{ goto_cadastro }}" style="text-align:center;font:600 13.5px/1.4 Manrope;color:#8792A6;padding-top:6px;cursor:pointer">Não tem conta? <span style="color:#1769FF;font-weight:700">Criar agora</span></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_cadastro }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 8px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#F7F9FC;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 26px 0">
+      <div style="font:800 28px/1.15 Manrope;color:#101828;letter-spacing:-.03em">Criar conta</div>
+      <div style="font:500 14.5px/1.5 Manrope;color:#5A6579;margin-top:8px">Leva menos de dois minutos.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:26px">
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Nome completo</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">Lucas Silva Andrade</div></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CPF</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">123.456.789-00</div></div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Data de nascimento</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">14/03/1994</div></div>
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Celular</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 14px;font:600 15px/1 Manrope;color:#101828">(11) 98765-4321</div></div>
+        </div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">E-mail</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">lucas.andrade@email.com</div></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:24px;align-items:flex-start">
+        <div style="width:22px;height:22px;flex:none;border-radius:7px;background:#1769FF;display:flex;align-items:center;justify-content:center;margin-top:1px"><div style="width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);margin-bottom:2px"></div></div>
+        <div style="font:500 13px/1.5 Manrope;color:#5A6579;text-wrap:pretty">Li e concordo com os <a href="#">Termos de Uso</a> e <a href="#">Política de Privacidade</a>.</div>
+      </div>
+    </div>
+    <div style="padding:16px 26px 34px">
+      <div onClick="{{ goto_otp }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_otp }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 8px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#F7F9FC;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 26px 0">
+      <div style="font:800 28px/1.15 Manrope;color:#101828;letter-spacing:-.03em">Confirme seu celular</div>
+      <div style="font:500 14.5px/1.5 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">Enviamos um código de 6 dígitos por SMS para (11) 98765-4321.</div>
+      <div style="display:flex;gap:9px;margin-top:34px">
+        <div style="flex:1;height:60px;border-radius:14px;border:2px solid #1769FF;background:#fff;display:flex;align-items:center;justify-content:center;font:800 22px/1 Manrope;color:#101828">4</div>
+        <div style="flex:1;height:60px;border-radius:14px;border:2px solid #1769FF;background:#fff;display:flex;align-items:center;justify-content:center;font:800 22px/1 Manrope;color:#101828">8</div>
+        <div style="flex:1;height:60px;border-radius:14px;border:2px solid #1769FF;background:#fff;display:flex;align-items:center;justify-content:center;font:800 22px/1 Manrope;color:#101828">2</div>
+        <div style="flex:1;height:60px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;justify-content:center"><div style="width:2px;height:24px;background:#1769FF;animation:pulseDot 1s infinite"></div></div>
+        <div style="flex:1;height:60px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD"></div>
+        <div style="flex:1;height:60px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:22px;font:600 13.5px/1 Manrope;color:#8792A6">Reenviar código em <span style="color:#101828;font-weight:800">00:24</span></div>
+      <div style="margin-top:26px;padding:16px;border-radius:16px;background:#F7F9FC;border:1px solid #EBF0F8;font:500 12.5px/1.55 Manrope;color:#5A6579;text-wrap:pretty">Nunca compartilhe este código. A Pixaí não pede códigos por telefone ou WhatsApp.</div>
+    </div>
+    <div style="padding:16px 26px 34px">
+      <div onClick="{{ goto_kyc }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Validar código</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_kyc }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="padding:60px 26px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#F7F9FC;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+        <div style="font:700 12.5px/1 Manrope;color:#8792A6">{{ kycStep }}</div>
+      </div>
+      <div style="height:6px;border-radius:3px;background:#EDF1F7;margin-top:18px"><div style="{{ kycBar }}"></div></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:26px 26px 0">
+      <sc-if value="{{ ky1 }}">
+        <div style="animation:riseIn .26s ease-out">
+          <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em">Vamos confirmar seu CPF</div>
+          <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">Consultamos as bases oficiais para confirmar que o CPF pertence a você.</div>
+          <div style="margin-top:26px;padding:20px;border-radius:20px;background:#F7F9FC;border:1px solid #EBF0F8">
+            <div style="font:700 11px/1 Manrope;letter-spacing:.1em;text-transform:uppercase;color:#8792A6">CPF informado</div>
+            <div style="font:800 22px/1 Manrope;color:#101828;margin-top:10px;letter-spacing:-.02em">***.456.789-**</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:14px"><div style="width:18px;height:18px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:7px;height:4px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:600 13px/1 Manrope;color:#0F9D63">Nome confere com a Receita Federal</div></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ky2 }}">
+        <div style="animation:riseIn .26s ease-out">
+          <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em">Envie seu documento</div>
+          <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">RG ou CNH, frente e verso, sem reflexos e com os dados legíveis.</div>
+          <div style="display:flex;gap:12px;margin-top:26px">
+            <div style="flex:1;height:130px;border-radius:18px;border:1.5px dashed #C6D2E4;background:repeating-linear-gradient(135deg,#F7F9FC,#F7F9FC 7px,#F1F5FA 7px,#F1F5FA 14px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer"><div style="width:26px;height:26px;border-radius:8px;border:2px solid #98A2B3"></div><div style="font:600 11px/1 ui-monospace,Menlo,monospace;color:#8792A6">frente</div></div>
+            <div style="flex:1;height:130px;border-radius:18px;border:1.5px dashed #C6D2E4;background:repeating-linear-gradient(135deg,#F7F9FC,#F7F9FC 7px,#F1F5FA 7px,#F1F5FA 14px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer"><div style="width:26px;height:26px;border-radius:8px;border:2px solid #98A2B3"></div><div style="font:600 11px/1 ui-monospace,Menlo,monospace;color:#8792A6">verso</div></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ky3 }}">
+        <div style="animation:riseIn .26s ease-out">
+          <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em">Agora uma selfie</div>
+          <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">Centralize o rosto e siga as instruções na tela. Leva alguns segundos.</div>
+          <div style="display:flex;justify-content:center;margin-top:30px"><div style="width:200px;height:250px;border-radius:110px;border:3px solid #1769FF;background:repeating-linear-gradient(135deg,#F7F9FC,#F7F9FC 7px,#F1F5FA 7px,#F1F5FA 14px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:20px"><div style="font:600 11px/1 ui-monospace,Menlo,monospace;color:#8792A6">liveness</div></div></div>
+          <div style="text-align:center;font:600 13px/1.4 Manrope;color:#5A6579;margin-top:18px">Vire o rosto lentamente para a direita</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ky4 }}">
+        <div style="animation:riseIn .26s ease-out">
+          <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em">Onde você mora</div>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px">
+            <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CEP</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">04538-133</div></div>
+            <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Endereço</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">Av. Brigadeiro Faria Lima, 3477</div></div>
+            <div style="display:flex;gap:12px"><div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Cidade</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">São Paulo</div></div><div style="width:96px"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">UF</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">SP</div></div></div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="padding:16px 26px 34px;display:flex;gap:12px">
+      <div onClick="{{ kycPrev }}" style="width:54px;height:54px;flex:none;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#F7F9FC"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div onClick="{{ kycNext }}" style="flex:1;height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_kycstatus }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Verificação de identidade</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px;display:flex;flex-direction:column;gap:12px">
+      <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:#F2A93B;animation:pulseDot 1.4s infinite"></div><div style="font:800 15px/1 Manrope;color:#101828">Em análise</div></div>
+        <div style="font:500 13.5px/1.55 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">Recebemos seus documentos. A análise costuma levar até 10 minutos e avisamos por notificação.</div>
+        <div style="height:6px;border-radius:3px;background:#F1F4F9;margin-top:16px"><div style="width:64%;height:100%;border-radius:3px;background:#F2A93B"></div></div>
+      </div>
+      <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:4px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:800 15px/1 Manrope;color:#101828">Verificado</div></div>
+        <div style="font:500 13.5px/1.55 Manrope;color:#5A6579;margin-top:10px">Conta liberada para Pix no cartão, com limite estimado de R$ 4.850,00.</div>
+      </div>
+      <div style="border-radius:20px;background:#fff;border:1px solid #FBE3C4;padding:20px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#FDF3E4;display:flex;align-items:center;justify-content:center;font:800 13px/1 Manrope;color:#B25E09">!</div><div style="font:800 15px/1 Manrope;color:#101828">Precisamos de mais informações</div></div>
+        <div style="font:500 13.5px/1.55 Manrope;color:#5A6579;margin-top:10px">A foto do documento ficou com reflexo. Envie novamente para concluir.</div>
+        <div onClick="{{ goto_kyc }}" style="margin-top:14px;height:44px;border-radius:13px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:700 14px/1 Manrope;cursor:pointer">Reenviar documento</div>
+      </div>
+      <div style="border-radius:20px;background:#fff;border:1px solid #F6D6D6;padding:20px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#FDEBEB;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:2px;background:#D14343;border-radius:1px"></div></div><div style="font:800 15px/1 Manrope;color:#101828">Não aprovado</div></div>
+        <div style="font:500 13.5px/1.55 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">Não foi possível confirmar sua identidade com os dados enviados. Fale com o suporte para entender os próximos passos.</div>
+        <div onClick="{{ goto_support }}" style="margin-top:14px;height:44px;border-radius:13px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 14px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC">Falar com suporte</div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_home }}">
+  <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:62px 20px 110px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:15px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope">LS</div>
+        <div style="flex:1">
+          <div style="font:800 18px/1.2 Manrope;color:#101828;letter-spacing:-.02em">Olá, Lucas</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:3px"><div style="width:14px;height:14px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:3px;border-left:1.6px solid #0F9D63;border-bottom:1.6px solid #0F9D63;transform:rotate(-45deg);margin-bottom:1px"></div></div><div style="font:700 11.5px/1 Manrope;color:#0F9D63">Conta verificada</div></div>
+        </div>
+        <div onClick="{{ goto_notif }}" style="width:42px;height:42px;border-radius:14px;background:#fff;border:1px solid #E9EEF6;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" style-hover="background:#EEF3FD"><div style="width:16px;height:16px;border:2px solid #101828;border-radius:6px 6px 3px 3px"></div><div style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#D14343;border:2px solid #fff"></div></div>
+      </div>
+
+      <div style="margin-top:20px;border-radius:24px;padding:22px;background:linear-gradient(145deg,#123A9E 0%,#1769FF 100%);box-shadow:0 16px 34px rgba(23,105,255,.28)">
+        <div style="font:800 21px/1.2 Manrope;color:#fff;letter-spacing:-.025em">Fazer um Pix</div>
+        <div style="font:500 13.5px/1.5 Manrope;color:rgba(255,255,255,.78);margin-top:6px">Pague usando seu cartão de crédito.</div>
+        <div onClick="{{ goto_pixhub }}" style="margin-top:18px;height:50px;border-radius:15px;background:#fff;color:#1769FF;display:flex;align-items:center;justify-content:center;font:800 15.5px/1 Manrope;cursor:pointer" style-hover="background:#EEF3FD">Enviar Pix</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <div onClick="{{ goto_pixkey }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;padding:16px 4px;border-radius:18px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF"><div style="width:34px;height:34px;border-radius:12px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:13px;height:13px;background:#1769FF;transform:rotate(45deg);border-radius:2px"></div></div><div style="font:700 11.5px/1 Manrope;color:#101828">Pix</div></div>
+        <div onClick="{{ goto_pixhub }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;padding:16px 4px;border-radius:18px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF"><div style="width:34px;height:34px;border-radius:12px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:14px;height:14px;border:2.5px solid #1769FF;border-radius:3px"></div></div><div style="font:700 11.5px/1 Manrope;color:#101828">QR Code</div></div>
+        <div onClick="{{ goto_mycards }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;padding:16px 4px;border-radius:18px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF"><div style="width:34px;height:34px;border-radius:12px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:17px;height:12px;border:2px solid #1769FF;border-radius:3px"></div></div><div style="font:700 11.5px/1 Manrope;color:#101828">Cartões</div></div>
+        <div onClick="{{ goto_history }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;padding:16px 4px;border-radius:18px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF"><div style="width:34px;height:34px;border-radius:12px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2.5px"><div style="width:15px;height:2px;background:#1769FF;border-radius:1px"></div><div style="width:15px;height:2px;background:#1769FF;border-radius:1px"></div><div style="width:9px;height:2px;background:#1769FF;border-radius:1px"></div></div><div style="font:700 11.5px/1 Manrope;color:#101828">Extrato</div></div>
+      </div>
+
+      <div style="margin-top:16px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
+        <div style="font:700 12.5px/1 Manrope;color:#5A6579">Seu limite para Pix no cartão</div>
+        <div style="font:800 26px/1 Manrope;color:#101828;letter-spacing:-.03em;margin-top:10px">R$ 4.850,00 <span style="font:600 14px/1 Manrope;color:#8792A6">disponível</span></div>
+        <div style="height:8px;border-radius:4px;background:#F1F4F9;margin-top:16px"><div style="width:78%;height:100%;border-radius:4px;background:linear-gradient(90deg,#1769FF,#4C8CFF)"></div></div>
+        <div style="font:500 12px/1.5 Manrope;color:#8792A6;margin-top:12px">Limite estimado para transações elegíveis.</div>
+        <div onClick="{{ goto_limite }}" style="margin-top:14px;font:700 13px/1 Manrope;color:#1769FF;cursor:pointer">Entender meu limite →</div>
+      </div>
+
+      <div style="margin-top:26px">
+        <div style="font:800 15px/1 Manrope;color:#101828;letter-spacing:-.01em">Enviar novamente</div>
+        <div style="display:flex;gap:14px;margin-top:14px;overflow-x:auto;padding-bottom:4px">
+          <sc-for list="{{ freq }}" as="f" hint-placeholder-count="5">
+            <div onClick="{{ f.go }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none;width:60px;cursor:pointer">
+              <div style="width:54px;height:54px;border-radius:19px;background:#fff;border:1px solid #E9EEF6;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope;color:#1769FF" style-hover="border-color:#1769FF">{{ f.ini }}</div>
+              <div style="font:600 11.5px/1.2 Manrope;color:#5A6579;text-align:center">{{ f.name }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="margin-top:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font:800 15px/1 Manrope;color:#101828;letter-spacing:-.01em">Atividade recente</div>
+          <div onClick="{{ goto_history }}" style="font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Ver tudo</div>
+        </div>
+        <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+          <div onClick="{{ goto_txdetail }}" style="display:flex;align-items:center;gap:13px;padding:16px;cursor:pointer;border-bottom:1px solid #F1F4F9" style-hover="background:#F9FBFE">
+            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">MA</div>
+            <div style="flex:1;min-width:0"><div style="font:700 14.5px/1.2 Manrope;color:#101828">Mariana Alves</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">Pix enviado · Hoje, 14:32</div></div>
+            <div style="text-align:right"><div style="font:800 14.5px/1 Manrope;color:#101828">R$ 350,00</div><div style="font:700 11px/1 Manrope;color:#0F9D63;margin-top:5px">Concluído</div></div>
+          </div>
+          <div onClick="{{ goto_txdetail }}" style="display:flex;align-items:center;gap:13px;padding:16px;cursor:pointer;border-bottom:1px solid #F1F4F9" style-hover="background:#F9FBFE">
+            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">MC</div>
+            <div style="flex:1;min-width:0"><div style="font:700 14.5px/1.2 Manrope;color:#101828">Mercado Central</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">Pix enviado · Ontem</div></div>
+            <div style="text-align:right"><div style="font:800 14.5px/1 Manrope;color:#101828">R$ 127,90</div><div style="font:700 11px/1 Manrope;color:#0F9D63;margin-top:5px">Concluído</div></div>
+          </div>
+          <div onClick="{{ goto_txdetail }}" style="display:flex;align-items:center;gap:13px;padding:16px;cursor:pointer" style-hover="background:#F9FBFE">
+            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">CF</div>
+            <div style="flex:1;min-width:0"><div style="font:700 14.5px/1.2 Manrope;color:#101828">Carlos Ferreira</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">Pix enviado · 28 Ago</div></div>
+            <div style="text-align:right"><div style="font:800 14.5px/1 Manrope;color:#101828">R$ 850,00</div><div style="font:700 11px/1 Manrope;color:#0F9D63;margin-top:5px">Concluído</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_pixhub }}">
+  <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:62px 20px 110px">
+      <div onClick="{{ goto_home }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em;margin-top:18px;text-wrap:pretty">Como você quer fazer o Pix?</div>
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:22px">
+        <div onClick="{{ goto_pixkey }}" style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF">
+          <div style="width:44px;height:44px;flex:none;border-radius:15px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:15px;height:15px;background:#1769FF;transform:rotate(45deg);border-radius:2px"></div></div>
+          <div style="flex:1"><div style="font:800 15.5px/1.2 Manrope;color:#101828">Chave Pix</div><div style="font:500 12.5px/1.35 Manrope;color:#8792A6;margin-top:4px">CPF, celular, e-mail ou chave aleatória</div></div>
+          <div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div>
+        </div>
+        <div onClick="{{ goto_recipient }}" style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF">
+          <div style="width:44px;height:44px;flex:none;border-radius:15px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:17px;height:17px;border:2.5px solid #1769FF;border-radius:3px"></div></div>
+          <div style="flex:1"><div style="font:800 15.5px/1.2 Manrope;color:#101828">Ler QR Code</div><div style="font:500 12.5px/1.35 Manrope;color:#8792A6;margin-top:4px">Use a câmera para escanear</div></div>
+          <div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div>
+        </div>
+        <div onClick="{{ goto_recipient }}" style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF">
+          <div style="width:44px;height:44px;flex:none;border-radius:15px;background:#EEF3FD;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><div style="width:16px;height:2.5px;background:#1769FF;border-radius:1px"></div><div style="width:16px;height:2.5px;background:#1769FF;border-radius:1px"></div><div style="width:10px;height:2.5px;background:#1769FF;border-radius:1px"></div></div>
+          <div style="flex:1"><div style="font:800 15.5px/1.2 Manrope;color:#101828">Pix Copia e Cola</div><div style="font:500 12.5px/1.35 Manrope;color:#8792A6;margin-top:4px">Cole o código Pix</div></div>
+          <div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div>
+        </div>
+        <div onClick="{{ goto_recipient }}" style="display:flex;align-items:center;gap:14px;padding:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF">
+          <div style="width:44px;height:44px;flex:none;border-radius:15px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:18px;height:13px;border:2px solid #1769FF;border-radius:3px"></div></div>
+          <div style="flex:1"><div style="font:800 15.5px/1.2 Manrope;color:#101828">Dados bancários</div><div style="font:500 12.5px/1.35 Manrope;color:#8792A6;margin-top:4px">Agência e conta</div></div>
+          <div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div>
+        </div>
+      </div>
+      <div style="font:800 14px/1 Manrope;color:#101828;margin-top:28px">Recentes</div>
+      <div style="display:flex;gap:14px;margin-top:14px;overflow-x:auto">
+        <sc-for list="{{ freq }}" as="f" hint-placeholder-count="5">
+          <div onClick="{{ f.go }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:none;width:60px;cursor:pointer">
+            <div style="width:54px;height:54px;border-radius:19px;background:#fff;border:1px solid #E9EEF6;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope;color:#1769FF" style-hover="border-color:#1769FF">{{ f.ini }}</div>
+            <div style="font:600 11.5px/1.2 Manrope;color:#5A6579;text-align:center">{{ f.name }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_pixkey }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#F7F9FC;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;overflow-y:auto;padding:18px 26px 0">
+      <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em">Para quem você quer enviar?</div>
+      <div style="margin-top:24px"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:8px">Digite a chave Pix</div>
+      <div style="height:56px;border-radius:14px;border:2px solid #1769FF;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15.5px/1 Manrope;color:#101828">mariana@email.com<div style="width:2px;height:22px;background:#1769FF;margin-left:2px;animation:pulseDot 1s infinite"></div></div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><div style="width:16px;height:16px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:7px;height:3.5px;border-left:1.6px solid #0F9D63;border-bottom:1.6px solid #0F9D63;transform:rotate(-45deg);margin-bottom:1px"></div></div><div style="font:600 12.5px/1 Manrope;color:#0F9D63">Formato de e-mail válido</div></div>
+      <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap">
+        <div style="padding:8px 14px;border-radius:999px;background:#EEF3FD;font:700 12px/1 Manrope;color:#1769FF">E-mail</div>
+        <div style="padding:8px 14px;border-radius:999px;background:#F4F6FA;font:700 12px/1 Manrope;color:#8792A6">CPF</div>
+        <div style="padding:8px 14px;border-radius:999px;background:#F4F6FA;font:700 12px/1 Manrope;color:#8792A6">Telefone</div>
+        <div style="padding:8px 14px;border-radius:999px;background:#F4F6FA;font:700 12px/1 Manrope;color:#8792A6">Chave aleatória</div>
+      </div>
+    </div>
+    <div style="background:#F4F6FA;border-top:1px solid #E4E9F2;padding:10px 6px 30px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">1</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">2</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">3</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">4</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">5</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">6</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">7</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">8</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">9</div>
+      <div style="height:44px;border-radius:8px;background:#D3D8E0;display:flex;align-items:center;justify-content:center;font:600 16px/1 Manrope;color:#101828;cursor:pointer">@</div>
+      <div style="height:44px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 20px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer">0</div>
+      <div onClick="{{ goto_recipient }}" style="height:44px;border-radius:8px;background:#1769FF;display:flex;align-items:center;justify-content:center;font:800 13px/1 Manrope;color:#fff;cursor:pointer">Continuar</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_recipient }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;overflow-y:auto;padding:18px 20px 0">
+      <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em;padding:0 6px">Confira o destinatário</div>
+      <div style="margin-top:22px;border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:26px 20px;display:flex;flex-direction:column;align-items:center">
+        <div style="width:76px;height:76px;border-radius:26px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 25px/1 Manrope;color:#1769FF">MA</div>
+        <div style="font:800 19px/1.25 Manrope;color:#101828;margin-top:16px;text-align:center;letter-spacing:-.02em">Mariana Alves da Silva</div>
+        <div style="width:100%;height:1px;background:#F1F4F9;margin:20px 0"></div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 13px/1 Manrope;color:#8792A6">CPF</div><div style="font:700 13px/1 Manrope;color:#101828">***.456.789-**</div></div>
+          <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 13px/1 Manrope;color:#8792A6">Banco</div><div style="font:700 13px/1 Manrope;color:#101828">Banco Exemplo S.A.</div></div>
+          <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 13px/1 Manrope;color:#8792A6">Chave Pix</div><div style="font:700 13px/1 Manrope;color:#101828">mariana@email.com</div></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:11px;padding:16px;border-radius:18px;background:#FDF8EC;border:1px solid #F6E4C0">
+        <div style="width:20px;height:20px;flex:none;border-radius:50%;background:#F2A93B;color:#fff;display:flex;align-items:center;justify-content:center;font:800 12px/1 Manrope">!</div>
+        <div style="font:600 13px/1.5 Manrope;color:#7A5312;text-wrap:pretty">Confira os dados antes de continuar. Pix enviado não pode ser cancelado.</div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 34px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_amount }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">É esta pessoa</div>
+      <div onClick="{{ back }}" style="height:48px;display:flex;align-items:center;justify-content:center;font:700 15px/1 Manrope;color:#5A6579;cursor:pointer">Voltar</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_amount }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#F7F9FC;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;padding:16px 26px 0;display:flex;flex-direction:column">
+      <div style="font:800 24px/1.2 Manrope;color:#101828;letter-spacing:-.03em">Quanto você quer enviar?</div>
+      <div style="display:flex;align-items:center;gap:11px;margin-top:16px">
+        <div style="width:32px;height:32px;border-radius:11px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 11.5px/1 Manrope;color:#1769FF">MA</div>
+        <div style="font:700 13.5px/1 Manrope;color:#5A6579">Mariana Alves</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px">
+        <div style="{{ amtTypedStyle }}">{{ amtTyped }}</div>
+        <div style="height:46px;border-radius:13px;border:1.5px dashed #D8DFEA;display:flex;align-items:center;padding:0 14px;font:600 13.5px/1 Manrope;color:#98A2B3;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Adicionar descrição</div>
+        <div style="font:600 12.5px/1.5 Manrope;color:#8792A6">Limite disponível para esta operação: <span style="color:#101828;font-weight:800">R$ 4.850,00</span></div>
+      </div>
+    </div>
+    <div style="padding:0 20px 12px"><div onClick="{{ goto_payment }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div></div>
+    <div style="background:#F4F6FA;border-top:1px solid #E4E9F2;padding:8px 6px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      <div onClick="{{ k1 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">1</div>
+      <div onClick="{{ k2 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">2</div>
+      <div onClick="{{ k3 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">3</div>
+      <div onClick="{{ k4 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">4</div>
+      <div onClick="{{ k5 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">5</div>
+      <div onClick="{{ k6 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">6</div>
+      <div onClick="{{ k7 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">7</div>
+      <div onClick="{{ k8 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">8</div>
+      <div onClick="{{ k9 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">9</div>
+      <div style="height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#98A2B3">,</div>
+      <div onClick="{{ k0 }}" style="height:46px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 21px/1 Manrope;color:#101828;box-shadow:0 1px 0 rgba(16,24,40,.18);cursor:pointer" style-active="background:#DFE5EE">0</div>
+      <div onClick="{{ del }}" style="height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#E4E9F2"><div style="width:16px;height:12px;border:2px solid #101828;border-radius:3px 5px 5px 3px"></div></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_payment }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;overflow-y:auto;padding:18px 20px 0">
+      <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em;padding:0 4px">Como você quer pagar?</div>
+      <div style="font:500 13.5px/1.5 Manrope;color:#5A6579;margin-top:8px;padding:0 4px">Pix de {{ amt }} para Mariana Alves.</div>
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:22px">
+        <sc-for list="{{ cardsSel }}" as="c" hint-placeholder-count="2">
+          <div onClick="{{ c.go }}" style="{{ c.style }}">
+            <div style="width:46px;height:32px;flex:none;border-radius:7px;background:linear-gradient(135deg,#101828,#38476A);display:flex;align-items:center;justify-content:center;font:800 8px/1 Manrope;color:rgba(255,255,255,.85);letter-spacing:.04em">{{ c.brand }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:800 15px/1 Manrope;color:#101828;letter-spacing:.04em">{{ c.last }}</div>
+              <div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">{{ c.holder }}</div>
+              <div style="font:600 11.5px/1 Manrope;color:#0F9D63;margin-top:6px">Limite estimado {{ c.limit }}</div>
+            </div>
+            <div style="{{ c.dot }}"></div>
+          </div>
+        </sc-for>
+        <div onClick="{{ goto_addcard }}" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:18px;border:1.5px dashed #C6D2E4;cursor:pointer" style-hover="border-color:#1769FF;background:#F4F8FF">
+          <div style="width:34px;height:34px;border-radius:11px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:700 18px/1 Manrope;color:#1769FF">+</div>
+          <div style="font:700 14.5px/1 Manrope;color:#1769FF">Adicionar cartão</div>
+        </div>
+      </div>
+      <div style="margin-top:18px;padding:15px;border-radius:16px;background:#EEF3FD;font:600 12.5px/1.55 Manrope;color:#2A4A8C;text-wrap:pretty">O destinatário recebe via Pix. A cobrança aparece na fatura do cartão escolhido.</div>
+    </div>
+    <div style="padding:14px 20px 34px"><div onClick="{{ goto_installments }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_addcard }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px 0">
+      <div style="font:800 24px/1.2 Manrope;color:#101828;letter-spacing:-.03em;padding:0 4px">Adicionar cartão</div>
+      <div style="margin-top:18px;height:186px;border-radius:22px;background:linear-gradient(140deg,#101828 0%,#223358 55%,#1769FF 140%);padding:22px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 36px rgba(16,24,40,.26)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="width:38px;height:28px;border-radius:6px;background:rgba(255,255,255,.26)"></div><div style="font:800 12px/1 Manrope;color:rgba(255,255,255,.7);letter-spacing:.1em">PIXAÍ</div></div>
+        <div style="font:700 19px/1 Manrope;color:#fff;letter-spacing:.16em">5412 8834 •••• ••••</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div><div style="font:600 8.5px/1 Manrope;color:rgba(255,255,255,.5);letter-spacing:.12em">TITULAR</div><div style="font:700 13px/1 Manrope;color:#fff;margin-top:6px">LUCAS SILVA</div></div>
+          <div><div style="font:600 8.5px/1 Manrope;color:rgba(255,255,255,.5);letter-spacing:.12em">VALIDADE</div><div style="font:700 13px/1 Manrope;color:#fff;margin-top:6px">08/30</div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;margin-top:20px">
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Número do cartão</div><div style="height:52px;border-radius:14px;border:2px solid #1769FF;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">5412 8834</div></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Nome impresso no cartão</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">LUCAS SILVA</div></div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Validade</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">08/30</div></div>
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CVV</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828;letter-spacing:.2em">•••</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:18px;align-items:center">
+        <div style="width:22px;height:22px;flex:none;border-radius:7px;background:#1769FF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);margin-bottom:2px"></div></div>
+        <div style="font:600 13px/1.4 Manrope;color:#5A6579">Salvar cartão para próximas transações</div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:11px;padding:15px;border-radius:16px;background:#fff;border:1px solid #EBF0F8">
+        <div style="width:20px;height:20px;flex:none;border-radius:6px;border:2px solid #0F9D63"></div>
+        <div style="font:500 12.5px/1.55 Manrope;color:#5A6579;text-wrap:pretty">Seus dados são protegidos e processados por parceiros certificados. A Pixaí não armazena o número completo nem o CVV.</div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 34px"><div onClick="{{ goto_payment }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Adicionar cartão</div></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_installments }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px 0">
+      <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em;padding:0 4px">Escolha como pagar</div>
+      <div style="margin-top:16px;border-radius:18px;background:#101828;padding:18px 20px">
+        <div style="font:700 11px/1 Manrope;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)">Mariana recebe</div>
+        <div style="font:800 28px/1 Manrope;color:#fff;letter-spacing:-.03em;margin-top:10px">{{ amt }}</div>
+        <div style="font:500 12px/1 Manrope;color:rgba(255,255,255,.6);margin-top:8px">Este valor não muda com o parcelamento.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+        <sc-for list="{{ instOpts }}" as="o" hint-placeholder-count="5">
+          <div onClick="{{ o.go }}" style="{{ o.style }}">
+            <div style="{{ o.dot }}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="{{ o.headStyle }}">{{ o.head }}</div>
+              <div style="font:600 12px/1 Manrope;color:#8792A6;margin-top:6px">{{ o.fee }}</div>
+            </div>
+            <div style="font:700 12.5px/1 Manrope;color:#5A6579;white-space:nowrap">{{ o.total }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:16px;font:500 12px/1.55 Manrope;color:#8792A6;padding:0 4px;text-wrap:pretty">Valores de parcela e taxas são simulações e podem variar conforme a análise da transação. Nenhuma opção vem pré-selecionada por ser mais cara.</div>
+    </div>
+    <div style="padding:14px 20px 34px;background:linear-gradient(180deg,rgba(247,249,252,0),#F7F9FC 30%)"><div onClick="{{ goto_review }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_review }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 22px 0"><div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div></div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px 0">
+      <div style="font:800 26px/1.18 Manrope;color:#101828;letter-spacing:-.03em;padding:0 4px">Confira antes de enviar</div>
+
+      <div style="margin-top:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:18px">
+        <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Destinatário</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+          <div style="width:40px;height:40px;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13px/1 Manrope;color:#1769FF">MA</div>
+          <div><div style="font:800 15px/1.2 Manrope;color:#101828">Mariana Alves da Silva</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">Banco Exemplo · mariana@email.com</div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:11px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:18px">
+        <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Pix</div>
+        <div style="font:600 12.5px/1 Manrope;color:#5A6579;margin-top:12px">Valor que Mariana recebe</div>
+        <div style="font:800 30px/1 Manrope;color:#101828;letter-spacing:-.03em;margin-top:8px">{{ amt }}</div>
+      </div>
+
+      <div style="margin-top:11px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:18px">
+        <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Pagamento</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:38px;height:26px;border-radius:6px;background:linear-gradient(135deg,#101828,#38476A)"></div><div style="font:700 14px/1 Manrope;color:#101828">{{ cardLabel }}</div></div>
+          <div onClick="{{ goto_payment }}" style="font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Trocar</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid #F1F4F9;gap:12px">
+          <div style="font:800 15px/1 Manrope;color:#101828">{{ instLabel }}</div>
+          <div onClick="{{ goto_installments }}" style="font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Trocar</div>
+        </div>
+      </div>
+
+      <div style="margin-top:11px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:18px">
+        <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Custos</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+          <div style="display:flex;justify-content:space-between"><div style="font:600 13.5px/1 Manrope;color:#5A6579">Valor do Pix</div><div style="font:700 13.5px/1 Manrope;color:#101828">{{ amt }}</div></div>
+          <div style="display:flex;justify-content:space-between"><div style="font:600 13.5px/1 Manrope;color:#5A6579">Taxas ({{ ratePct }})</div><div style="font:700 13.5px/1 Manrope;color:#101828">{{ fee }}</div></div>
+          <div style="height:1px;background:#F1F4F9"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:800 14.5px/1 Manrope;color:#101828">Total no cartão</div><div style="font:800 20px/1 Manrope;color:#101828;letter-spacing:-.02em">{{ total }}</div></div>
+        </div>
+        <div onClick="{{ toggleFee }}" style="margin-top:14px;font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Ver detalhes das taxas</div>
+        <sc-if value="{{ feeOpen }}">
+          <div style="margin-top:12px;padding:14px;border-radius:14px;background:#F7F9FC;display:flex;flex-direction:column;gap:10px;animation:fadeIn .2s">
+            <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#5A6579">Processamento do cartão</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ feeProc }}</div></div>
+            <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#5A6579">Antecipação / parcelamento</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ feeAcq }}</div></div>
+            <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#5A6579">Impostos e liquidação Pix</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ feeIof }}</div></div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="margin-top:14px;border-radius:20px;background:#EEF3FD;border:1px solid #D6E3FB;padding:18px">
+        <div style="font:800 14px/1.45 Manrope;color:#123A9E">{{ recLine }}</div>
+        <div style="font:800 14px/1.45 Manrope;color:#123A9E;margin-top:6px">{{ chargeLine }}</div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 34px;background:linear-gradient(180deg,rgba(247,249,252,0),#F7F9FC 30%)"><div onClick="{{ goto_auth }}" style="height:56px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Confirmar e enviar Pix</div></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_auth }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(16,24,40,.6);animation:fadeIn .2s">
+    <div style="border-radius:30px 30px 0 0;background:#fff;padding:28px 26px 36px;animation:riseIn .28s cubic-bezier(.2,.8,.3,1)">
+      <div style="width:44px;height:5px;border-radius:3px;background:#E1E7F0;margin:0 auto 22px"></div>
+      <div style="display:flex;justify-content:center"><div style="width:88px;height:88px;border-radius:32px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:38px;height:38px;border:3px solid #1769FF;border-radius:13px;position:relative"><div style="position:absolute;inset:7px 8px auto 8px;height:3px;background:#1769FF;border-radius:2px"></div><div style="position:absolute;inset:auto 8px 7px 8px;height:3px;background:#1769FF;border-radius:2px"></div></div></div></div>
+      <div style="font:800 22px/1.2 Manrope;color:#101828;text-align:center;margin-top:20px;letter-spacing:-.025em">Confirme sua identidade</div>
+      <div style="font:500 13.5px/1.5 Manrope;color:#5A6579;text-align:center;margin-top:10px">Estamos confirmando que é você.</div>
+      <div style="margin-top:20px;padding:14px 16px;border-radius:16px;background:#F7F9FC;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font:600 11.5px/1 Manrope;color:#8792A6">Total no cartão</div><div style="font:800 17px/1 Manrope;color:#101828;margin-top:6px">{{ total }}</div></div>
+        <div style="font:700 12.5px/1 Manrope;color:#5A6579">{{ instShort }}</div>
+      </div>
+      <div onClick="{{ goto_processing }}" style="margin-top:20px;height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer" style-hover="background:#0F55D6">Usar Face ID</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
+        <div style="width:14px;height:14px;border-radius:50%;background:#1769FF"></div><div style="width:14px;height:14px;border-radius:50%;background:#1769FF"></div><div style="width:14px;height:14px;border-radius:50%;background:#D3DBE7"></div><div style="width:14px;height:14px;border-radius:50%;background:#D3DBE7"></div><div style="width:14px;height:14px;border-radius:50%;background:#D3DBE7"></div><div style="width:14px;height:14px;border-radius:50%;background:#D3DBE7"></div>
+      </div>
+      <div onClick="{{ goto_processing }}" style="text-align:center;font:700 13.5px/1 Manrope;color:#1769FF;margin-top:18px;cursor:pointer">Usar PIN de 6 dígitos</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_processing }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:linear-gradient(165deg,#0B1B3F,#123A9E)">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 34px">
+      <div style="width:56px;height:56px;border-radius:50%;border:3px solid rgba(255,255,255,.18);border-top-color:#fff;animation:spin .9s linear infinite"></div>
+      <div style="font:800 26px/1.2 Manrope;color:#fff;letter-spacing:-.03em;margin-top:30px">Estamos enviando seu Pix</div>
+      <div style="font:500 13.5px/1.5 Manrope;color:rgba(255,255,255,.6);margin-top:10px">Não feche o aplicativo.</div>
+      <div style="display:flex;flex-direction:column;gap:18px;margin-top:38px">
+        <div style="display:flex;align-items:center;gap:14px"><div style="{{ dot0 }}"></div><div style="{{ lbl0 }}">Validando pagamento</div></div>
+        <div style="display:flex;align-items:center;gap:14px"><div style="{{ dot1 }}"></div><div style="{{ lbl1 }}">Autorizando cartão</div></div>
+        <div style="display:flex;align-items:center;gap:14px"><div style="{{ dot2 }}"></div><div style="{{ lbl2 }}">Enviando Pix</div></div>
+        <div style="display:flex;align-items:center;gap:14px"><div style="{{ dot3 }}"></div><div style="{{ lbl3 }}">Confirmando transação</div></div>
+      </div>
+    </div>
+    <div style="padding:0 34px 46px;font:500 12px/1.55 Manrope;color:rgba(255,255,255,.45);text-wrap:pretty">A confirmação só aparece após a resposta do provedor de pagamento e da instituição Pix.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_success }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="flex:1;overflow-y:auto;padding:76px 26px 0;display:flex;flex-direction:column;align-items:center">
+      <div style="width:96px;height:96px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.2,.8,.3,1) both">
+        <div style="width:34px;height:18px;border-left:5px solid #0F9D63;border-bottom:5px solid #0F9D63;transform:rotate(-45deg);margin-bottom:8px;border-radius:2px"></div>
+      </div>
+      <div style="font:800 30px/1.15 Manrope;color:#101828;letter-spacing:-.035em;margin-top:24px">Pix enviado!</div>
+      <div style="font:800 38px/1 Manrope;color:#101828;letter-spacing:-.04em;margin-top:18px">{{ amt }}</div>
+      <div style="font:600 14px/1 Manrope;color:#5A6579;margin-top:12px">para Mariana Alves</div>
+      <div style="width:100%;margin-top:26px;border-radius:20px;background:#F7F9FC;border:1px solid #EBF0F8;padding:18px;display:flex;flex-direction:column;gap:13px">
+        <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Data</div><div style="font:700 12.5px/1 Manrope;color:#101828">31 ago 2026 • 22:18</div></div>
+        <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Pagamento</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ cardLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Parcelamento</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ instLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 12.5px/1 Manrope;color:#8792A6">ID da transação</div><div style="font:700 12.5px/1 ui-monospace,Menlo,monospace;color:#101828">PXA82D20X</div></div>
+      </div>
+    </div>
+    <div style="padding:16px 26px 34px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_receipt }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Ver comprovante</div>
+      <div style="height:52px;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 15px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC">Compartilhar comprovante</div>
+      <div onClick="{{ goto_home }}" style="height:46px;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#5A6579;cursor:pointer">Voltar ao início</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_receipt }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:60px 22px 10px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 15.5px/1 Manrope;color:#101828">Comprovante Pix</div>
+      <div style="width:38px"></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 20px 0">
+      <div style="border-radius:22px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <div style="padding:22px 20px;text-align:center;border-bottom:1px dashed #E1E7F0">
+          <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:#E7F7EF"><div style="width:7px;height:7px;border-radius:50%;background:#0F9D63"></div><div style="font:800 11.5px/1 Manrope;color:#0F9D63">Concluído</div></div>
+          <div style="font:800 32px/1 Manrope;color:#101828;letter-spacing:-.035em;margin-top:16px">{{ amt }}</div>
+          <div style="font:500 12.5px/1 Manrope;color:#8792A6;margin-top:10px">31 de agosto de 2026 • 22:18</div>
+        </div>
+        <div style="padding:20px">
+          <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Destinatário</div>
+          <div style="display:flex;flex-direction:column;gap:11px;margin-top:13px">
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Nome</div><div style="font:700 12.5px/1.3 Manrope;color:#101828;text-align:right">Mariana Alves da Silva</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">CPF</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">***.456.789-**</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Instituição</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">Banco Exemplo S.A.</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Chave Pix</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">mariana@email.com</div></div>
+          </div>
+          <div style="height:1px;background:#F1F4F9;margin:18px 0"></div>
+          <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Pagador</div>
+          <div style="display:flex;flex-direction:column;gap:11px;margin-top:13px">
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Nome</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">Lucas Silva Andrade</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">CPF</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">***.789.123-**</div></div>
+          </div>
+          <div style="height:1px;background:#F1F4F9;margin:18px 0"></div>
+          <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Pagamento</div>
+          <div style="display:flex;flex-direction:column;gap:11px;margin-top:13px">
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Cartão</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">{{ cardLabel }}</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Parcelas</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">{{ instLabel }}</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">Taxas</div><div style="font:700 12.5px/1.3 Manrope;color:#101828">{{ fee }}</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:700 12.5px/1.3 Manrope;color:#101828">Total cobrado</div><div style="font:800 14px/1.3 Manrope;color:#101828">{{ total }}</div></div>
+          </div>
+          <div style="height:1px;background:#F1F4F9;margin:18px 0"></div>
+          <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Identificação</div>
+          <div style="display:flex;flex-direction:column;gap:11px;margin-top:13px">
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">ID da transação</div><div style="font:700 12px/1.3 ui-monospace,Menlo,monospace;color:#101828">PXA82D20X</div></div>
+            <div style="display:flex;justify-content:space-between;gap:14px"><div style="font:600 12.5px/1.3 Manrope;color:#8792A6">EndToEnd ID</div><div style="font:700 11px/1.3 ui-monospace,Menlo,monospace;color:#101828;text-align:right;word-break:break-all">E1802684420260831221800X82D20</div></div>
+          </div>
+        </div>
+        <div style="padding:16px 20px;border-top:1px dashed #E1E7F0;display:flex;align-items:center;gap:8px;justify-content:center">
+          <div style="width:16px;height:16px;border-radius:5px;background:#1769FF;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#fff;transform:rotate(45deg);border-radius:1px"></div></div>
+          <div style="font:700 11px/1 Manrope;color:#98A2B3;letter-spacing:.04em">Emitido por Pixaí · Instituição de pagamento parceira</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 34px;display:flex;gap:10px">
+      <div style="flex:1;height:52px;border-radius:16px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC">Compartilhar</div>
+      <div style="flex:1;height:52px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 14.5px/1 Manrope;cursor:pointer" style-hover="background:#0F55D6">Baixar comprovante</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_failauth }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="flex:1;overflow-y:auto;padding:96px 26px 0;display:flex;flex-direction:column;align-items:center">
+      <div style="width:88px;height:88px;border-radius:50%;background:#FDEBEB;display:flex;align-items:center;justify-content:center;animation:pop .45s cubic-bezier(.2,.8,.3,1) both"><div style="width:26px;height:26px;position:relative"><div style="position:absolute;top:11px;left:0;width:26px;height:4px;background:#D14343;border-radius:2px;transform:rotate(45deg)"></div><div style="position:absolute;top:11px;left:0;width:26px;height:4px;background:#D14343;border-radius:2px;transform:rotate(-45deg)"></div></div></div>
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em;margin-top:24px;text-align:center">Cartão não autorizado</div>
+      <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:12px;text-align:center;text-wrap:pretty">Não conseguimos autorizar este pagamento. Nenhum valor foi cobrado e o Pix não foi enviado.</div>
+      <div style="width:100%;margin-top:24px;border-radius:18px;background:#F7F9FC;border:1px solid #EBF0F8;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Cartão</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ cardLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Valor tentado</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ total }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Status</div><div style="font:700 12.5px/1 Manrope;color:#D14343">Recusado pelo emissor</div></div>
+      </div>
+      <div style="width:100%;margin-top:14px;font:500 12.5px/1.55 Manrope;color:#8792A6;text-wrap:pretty">Se o problema continuar, fale com o emissor do cartão ou tente outro cartão.</div>
+    </div>
+    <div style="padding:16px 26px 34px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_processing }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Tentar novamente</div>
+      <div onClick="{{ goto_payment }}" style="height:52px;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 15px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC">Usar outro cartão</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_faillimit }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="flex:1;overflow-y:auto;padding:96px 26px 0;display:flex;flex-direction:column;align-items:center">
+      <div style="width:88px;height:88px;border-radius:50%;background:#FDF3E4;display:flex;align-items:center;justify-content:center;font:800 40px/1 Manrope;color:#B25E09;animation:pop .45s cubic-bezier(.2,.8,.3,1) both">!</div>
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em;margin-top:24px;text-align:center">Limite insuficiente</div>
+      <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:12px;text-align:center;text-wrap:pretty">O cartão informado não possui limite suficiente para esta operação.</div>
+      <div style="width:100%;margin-top:24px;border-radius:18px;background:#F7F9FC;border:1px solid #EBF0F8;padding:18px">
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Necessário</div><div style="font:800 13px/1 Manrope;color:#101828">{{ total }}</div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Disponível no {{ cardLast }}</div><div style="font:800 13px/1 Manrope;color:#B25E09">R$ 842,10</div></div>
+        <div style="height:7px;border-radius:4px;background:#EDF1F7;margin-top:16px"><div style="width:22%;height:100%;border-radius:4px;background:#F2A93B"></div></div>
+      </div>
+      <div style="width:100%;margin-top:14px;font:500 12.5px/1.55 Manrope;color:#8792A6;text-wrap:pretty">Você também pode reduzir o valor do Pix ou aumentar o número de parcelas.</div>
+    </div>
+    <div style="padding:16px 26px 34px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_payment }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Escolher outro cartão</div>
+      <div onClick="{{ goto_amount }}" style="height:52px;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 15px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC">Alterar valor</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_failreview }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="flex:1;overflow-y:auto;padding:96px 26px 0;display:flex;flex-direction:column;align-items:center">
+      <div style="width:88px;height:88px;border-radius:50%;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(23,105,255,.2);border-top-color:#1769FF;animation:spin 1.4s linear infinite"></div></div>
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em;margin-top:24px;text-align:center">Transação em análise</div>
+      <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:12px;text-align:center;text-wrap:pretty">Estamos fazendo uma verificação adicional de segurança nesta transação.</div>
+      <div style="width:100%;margin-top:24px;border-radius:18px;background:#EEF3FD;border:1px solid #D6E3FB;padding:18px;font:600 13px/1.55 Manrope;color:#2A4A8C;text-wrap:pretty">Não tente enviar novamente. Isso pode gerar uma segunda cobrança. Avisamos por notificação assim que a análise terminar — normalmente em até 30 minutos.</div>
+      <div style="width:100%;margin-top:12px;border-radius:18px;background:#F7F9FC;border:1px solid #EBF0F8;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Valor do Pix</div><div style="font:700 12.5px/1 Manrope;color:#101828">R$ 2.800,00</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Cartão</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ cardLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Status</div><div style="font:700 12.5px/1 Manrope;color:#B25E09">Em análise</div></div>
+      </div>
+    </div>
+    <div style="padding:16px 26px 34px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_home }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Voltar ao início</div>
+      <div onClick="{{ goto_support }}" style="height:52px;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 15px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC">Falar com suporte</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_failpix }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;animation:scrIn .22s ease-out">
+    <div style="flex:1;overflow-y:auto;padding:96px 26px 0;display:flex;flex-direction:column;align-items:center">
+      <div style="width:88px;height:88px;border-radius:50%;background:#FDEBEB;display:flex;align-items:center;justify-content:center"><div style="width:30px;height:30px;border:4px solid #D14343;border-radius:50%;display:flex;align-items:center;justify-content:center"><div style="width:14px;height:3px;background:#D14343;border-radius:2px;transform:rotate(-45deg)"></div></div></div>
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em;margin-top:24px;text-align:center">Pix não concluído</div>
+      <div style="font:500 14.5px/1.55 Manrope;color:#5A6579;margin-top:12px;text-align:center;text-wrap:pretty">Não conseguimos concluir o Pix. O valor cobrado no cartão será estornado integralmente.</div>
+      <div style="width:100%;margin-top:24px;border-radius:18px;background:#F7F9FC;border:1px solid #EBF0F8;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Valor estornado</div><div style="font:800 13px/1 Manrope;color:#101828">R$ 540,20</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Destino</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ cardLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Prazo estimado</div><div style="font:700 12.5px/1 Manrope;color:#101828">Até 2 faturas</div></div>
+      </div>
+    </div>
+    <div style="padding:16px 26px 34px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_refund }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Acompanhar estorno</div>
+      <div onClick="{{ goto_home }}" style="height:46px;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#5A6579;cursor:pointer">Voltar ao início</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_refund }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Estorno</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px">
+      <div style="border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:22px">
+        <div style="font:600 12px/1 Manrope;color:#8792A6">Valor do estorno</div>
+        <div style="font:800 32px/1 Manrope;color:#101828;letter-spacing:-.035em;margin-top:10px">R$ 540,20</div>
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:#FDF3E4;margin-top:14px"><div style="width:7px;height:7px;border-radius:50%;background:#F2A93B;animation:pulseDot 1.3s infinite"></div><div style="font:800 11.5px/1 Manrope;color:#B25E09">Em processamento</div></div>
+      </div>
+      <div style="margin-top:12px;border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:22px">
+        <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Andamento</div>
+        <div style="margin-top:18px;display:flex;flex-direction:column;gap:0">
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:14px;height:14px;border-radius:50%;background:#0F9D63"></div><div style="width:2px;flex:1;background:#0F9D63"></div></div><div style="padding-bottom:22px"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Pix não concluído</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22 ago · 17:46</div></div></div>
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:14px;height:14px;border-radius:50%;background:#0F9D63"></div><div style="width:2px;flex:1;background:#E1E7F0"></div></div><div style="padding-bottom:22px"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Estorno solicitado ao emissor</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22 ago · 17:52</div></div></div>
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:14px;height:14px;border-radius:50%;background:#F2A93B;animation:pulseDot 1.3s infinite"></div><div style="width:2px;flex:1;background:#E1E7F0"></div></div><div style="padding-bottom:22px"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Emissor processando</div><div style="font:500 11.5px/1.4 Manrope;color:#8792A6;margin-top:5px">O prazo é definido pelo banco emissor do cartão</div></div></div>
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:14px;height:14px;border-radius:50%;background:#E1E7F0"></div></div><div><div style="font:700 13.5px/1.2 Manrope;color:#98A2B3">Crédito na fatura</div><div style="font:500 11.5px/1 Manrope;color:#98A2B3;margin-top:5px">Previsto para até 2 faturas</div></div></div>
+        </div>
+      </div>
+      <div onClick="{{ goto_support }}" style="margin-top:12px;height:52px;border-radius:16px;background:#fff;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F1F5FC">Falar com suporte</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_history }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 20px 12px;background:#F7F9FC">
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em">Transações</div>
+      <div style="margin-top:14px;height:46px;border-radius:14px;background:#fff;border:1px solid #E9EEF6;display:flex;align-items:center;gap:10px;padding:0 14px">
+        <div style="width:15px;height:15px;border:2px solid #98A2B3;border-radius:50%"></div>
+        <div style="font:600 14px/1 Manrope;color:#98A2B3">Buscar transação</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:2px">
+        <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><div onClick="{{ f.go }}" style="{{ f.style }}">{{ f.label }}</div></sc-for>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 110px">
+      <div style="font:800 11px/1 Manrope;letter-spacing:.12em;text-transform:uppercase;color:#98A2B3;padding:12px 4px 10px">Agosto 2026</div>
+      <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <sc-for list="{{ txAug }}" as="t" hint-placeholder-count="5">
+          <div onClick="{{ t.go }}" style="display:flex;gap:13px;padding:16px;cursor:pointer;border-bottom:1px solid #F1F4F9" style-hover="background:#F9FBFE">
+            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">{{ t.ini }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 14.5px/1.2 Manrope;color:#101828">{{ t.name }}</div>
+              <div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">{{ t.when }}</div>
+              <div style="font:600 11.5px/1 Manrope;color:#5A6579;margin-top:7px">Cartão {{ t.pay }}</div>
+            </div>
+            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+              <div style="font:800 14.5px/1 Manrope;color:#101828">{{ t.pix }}</div>
+              <div style="padding:4px 9px;border-radius:999px;font:700 10.5px/1 Manrope;background:{{ t.bg }};color:{{ t.c }}">{{ t.st }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font:800 11px/1 Manrope;letter-spacing:.12em;text-transform:uppercase;color:#98A2B3;padding:22px 4px 10px">Julho 2026</div>
+      <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <sc-for list="{{ txJul }}" as="t" hint-placeholder-count="2">
+          <div onClick="{{ t.go }}" style="display:flex;gap:13px;padding:16px;cursor:pointer;border-bottom:1px solid #F1F4F9" style-hover="background:#F9FBFE">
+            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">{{ t.ini }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 14.5px/1.2 Manrope;color:#101828">{{ t.name }}</div>
+              <div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">{{ t.when }}</div>
+              <div style="font:600 11.5px/1 Manrope;color:#5A6579;margin-top:7px">Cartão {{ t.pay }}</div>
+            </div>
+            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+              <div style="font:800 14.5px/1 Manrope;color:#101828">{{ t.pix }}</div>
+              <div style="padding:4px 9px;border-radius:999px;font:700 10.5px/1 Manrope;background:{{ t.bg }};color:{{ t.c }}">{{ t.st }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_empty }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 20px 12px"><div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em">Transações</div></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 34px 90px">
+      <div style="width:96px;height:96px;border-radius:32px;background:#fff;border:1px solid #EBF0F8;display:flex;align-items:center;justify-content:center"><div style="width:30px;height:30px;background:#E3EAF5;transform:rotate(45deg);border-radius:5px"></div></div>
+      <div style="font:800 20px/1.25 Manrope;color:#101828;margin-top:22px;text-align:center;letter-spacing:-.02em">Nenhuma transação ainda</div>
+      <div style="font:500 14px/1.55 Manrope;color:#8792A6;margin-top:10px;text-align:center;text-wrap:pretty">Quando você fizer seu primeiro Pix no cartão, ele aparecerá aqui.</div>
+      <div onClick="{{ goto_pixhub }}" style="margin-top:24px;height:50px;padding:0 26px;border-radius:15px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Fazer meu primeiro Pix</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_txdetail }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Detalhe da transação</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px">
+      <div style="border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:22px">
+        <div style="display:flex;align-items:center;gap:13px">
+          <div style="width:46px;height:46px;border-radius:16px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope;color:#1769FF">MA</div>
+          <div><div style="font:800 16px/1.2 Manrope;color:#101828">Mariana Alves</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">Pix enviado · 31 ago 2026</div></div>
+        </div>
+        <div style="font:800 30px/1 Manrope;color:#101828;letter-spacing:-.035em;margin-top:20px">{{ amt }}</div>
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:#E7F7EF;margin-top:14px"><div style="width:7px;height:7px;border-radius:50%;background:#0F9D63"></div><div style="font:800 11.5px/1 Manrope;color:#0F9D63">Concluído</div></div>
+      </div>
+      <div style="margin-top:12px;border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:22px">
+        <div style="font:800 10.5px/1 Manrope;letter-spacing:.13em;text-transform:uppercase;color:#98A2B3">Linha do tempo</div>
+        <div style="margin-top:18px">
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#0F9D63"></div><div style="width:2px;flex:1;background:#0F9D63"></div></div><div style="padding-bottom:20px"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Pagamento solicitado</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22:18</div></div></div>
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#0F9D63"></div><div style="width:2px;flex:1;background:#0F9D63"></div></div><div style="padding-bottom:20px"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Cartão autorizado</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22:18</div></div></div>
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#0F9D63"></div><div style="width:2px;flex:1;background:#0F9D63"></div></div><div style="padding-bottom:20px"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Pix enviado</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22:18</div></div></div>
+          <div style="display:flex;gap:14px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#0F9D63"></div></div><div><div style="font:700 13.5px/1.2 Manrope;color:#101828">Pix confirmado</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22:18</div></div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:22px;display:flex;flex-direction:column;gap:13px">
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Cartão</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ cardLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Parcelamento</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ instLabel }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:600 12.5px/1 Manrope;color:#8792A6">Taxas</div><div style="font:700 12.5px/1 Manrope;color:#101828">{{ fee }}</div></div>
+        <div style="display:flex;justify-content:space-between"><div style="font:700 12.5px/1 Manrope;color:#101828">Total no cartão</div><div style="font:800 14px/1 Manrope;color:#101828">{{ total }}</div></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <div onClick="{{ goto_receipt }}" style="flex:1;height:50px;border-radius:15px;background:#fff;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font:700 14px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F1F5FC">Comprovante</div>
+        <div onClick="{{ goto_pixhub }}" style="flex:1;height:50px;border-radius:15px;background:#1769FF;display:flex;align-items:center;justify-content:center;font:800 14px/1 Manrope;color:#fff;cursor:pointer" style-hover="background:#0F55D6">Repetir Pix</div>
+      </div>
+      <div style="margin-top:16px;border-radius:18px;background:#EEF3FD;border:1px solid #D6E3FB;padding:18px">
+        <div style="font:800 14px/1.35 Manrope;color:#123A9E">Precisa de ajuda com esta transação?</div>
+        <div onClick="{{ goto_support }}" style="margin-top:12px;height:44px;border-radius:13px;background:#123A9E;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13.5px/1 Manrope;cursor:pointer">Falar com suporte</div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_mycards }}">
+  <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 20px 110px">
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em">Meus cartões</div>
+      <div style="margin-top:20px;height:180px;border-radius:22px;background:linear-gradient(140deg,#101828 0%,#223358 60%,#31456F 100%);padding:22px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 36px rgba(16,24,40,.24)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="width:38px;height:28px;border-radius:6px;background:rgba(255,255,255,.26)"></div>
+          <div style="padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);font:800 10px/1 Manrope;color:#fff;letter-spacing:.06em">PRINCIPAL</div>
+        </div>
+        <div style="font:700 19px/1 Manrope;color:#fff;letter-spacing:.18em">•••• 4821</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="font:700 12.5px/1 Manrope;color:rgba(255,255,255,.82)">Lucas Silva</div><div style="font:800 12px/1 Manrope;color:#fff;letter-spacing:.06em">MASTERCARD</div></div>
+      </div>
+      <div style="margin-top:12px;height:180px;border-radius:22px;background:linear-gradient(140deg,#123A9E,#1769FF);padding:22px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 36px rgba(23,105,255,.24)">
+        <div style="width:38px;height:28px;border-radius:6px;background:rgba(255,255,255,.28)"></div>
+        <div style="font:700 19px/1 Manrope;color:#fff;letter-spacing:.18em">•••• 9132</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="font:700 12.5px/1 Manrope;color:rgba(255,255,255,.82)">Lucas Silva</div><div style="font:800 12px/1 Manrope;color:#fff;letter-spacing:.06em">VISA</div></div>
+      </div>
+      <div style="margin-top:16px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Definir como principal</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_history }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Ver transações do cartão</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;cursor:pointer" style-hover="background:#FFF6F6"><div style="font:600 14px/1 Manrope;color:#D14343">Remover cartão</div><div style="width:8px;height:8px;border-right:2px solid #E7B4B4;border-top:2px solid #E7B4B4;transform:rotate(45deg)"></div></div>
+      </div>
+      <div onClick="{{ goto_addcard }}" style="margin-top:12px;height:54px;border-radius:16px;border:1.5px dashed #C6D2E4;display:flex;align-items:center;justify-content:center;gap:10px;font:700 15px/1 Manrope;color:#1769FF;cursor:pointer" style-hover="border-color:#1769FF;background:#F4F8FF"><span style="font-size:18px">+</span> Adicionar cartão</div>
+      <div style="margin-top:14px;font:500 12px/1.55 Manrope;color:#8792A6;padding:0 4px;text-wrap:pretty">Os dados completos do cartão ficam com o processador certificado. A Pixaí nunca exibe o número completo nem o CVV.</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_parcelas }}">
+  <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 20px 110px">
+      <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em">Parcelamentos</div>
+      <div style="font:500 13.5px/1.5 Manrope;color:#5A6579;margin-top:8px">Suas próximas parcelas de Pix pagos no cartão.</div>
+      <div style="margin-top:18px;border-radius:20px;background:#101828;padding:20px">
+        <div style="font:600 11.5px/1 Manrope;color:rgba(255,255,255,.6)">Total em aberto</div>
+        <div style="font:800 28px/1 Manrope;color:#fff;letter-spacing:-.03em;margin-top:10px">R$ 1.847,40</div>
+        <div style="font:500 12px/1 Manrope;color:rgba(255,255,255,.55);margin-top:8px">Próxima parcela em 15 set</div>
+      </div>
+      <div style="margin-top:14px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div><div style="font:800 15.5px/1.2 Manrope;color:#101828">Pix para Mariana</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:6px">Cartão •••• 4821</div></div>
+          <div style="font:800 15px/1 Manrope;color:#101828">6x R$ 184,70</div>
+        </div>
+        <div style="height:8px;border-radius:4px;background:#F1F4F9;margin-top:18px;display:flex;gap:3px;overflow:hidden">
+          <div style="flex:1;background:#1769FF"></div><div style="flex:1;background:#1769FF"></div><div style="flex:1;background:#EDF1F7"></div><div style="flex:1;background:#EDF1F7"></div><div style="flex:1;background:#EDF1F7"></div><div style="flex:1;background:#EDF1F7"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><div style="font:600 12px/1 Manrope;color:#5A6579">Pagas 2 de 6</div><div style="font:700 12px/1 Manrope;color:#1769FF">Próxima 15 set</div></div>
+      </div>
+      <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div><div style="font:800 15.5px/1.2 Manrope;color:#101828">Pix para Carlos Ferreira</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:6px">Cartão •••• 9132</div></div>
+          <div style="font:800 15px/1 Manrope;color:#101828">3x R$ 302,00</div>
+        </div>
+        <div style="height:8px;border-radius:4px;background:#F1F4F9;margin-top:18px;display:flex;gap:3px;overflow:hidden">
+          <div style="flex:1;background:#1769FF"></div><div style="flex:1;background:#1769FF"></div><div style="flex:1;background:#EDF1F7"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><div style="font:600 12px/1 Manrope;color:#5A6579">Pagas 2 de 3</div><div style="font:700 12px/1 Manrope;color:#1769FF">Próxima 15 set</div></div>
+      </div>
+      <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px;opacity:.65">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div><div style="font:800 15.5px/1.2 Manrope;color:#101828">Pix para Renata Souza</div><div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:6px">Cartão •••• 4821</div></div>
+          <div style="font:800 15px/1 Manrope;color:#101828">1x R$ 332,80</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:14px"><div style="font:600 12px/1 Manrope;color:#0F9D63">Quitado</div><div style="font:600 12px/1 Manrope;color:#8792A6">28 jul</div></div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_limite }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Seu limite Pix no cartão</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px">
+      <div style="border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:24px">
+        <div style="font:600 12px/1 Manrope;color:#8792A6">Disponível agora</div>
+        <div style="font:800 36px/1 Manrope;color:#101828;letter-spacing:-.04em;margin-top:10px">R$ 4.850</div>
+        <div style="height:12px;border-radius:6px;background:#EDF1F7;margin-top:22px;overflow:hidden;display:flex"><div style="width:78%;background:linear-gradient(90deg,#1769FF,#4C8CFF)"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:16px">
+          <div><div style="font:600 11.5px/1 Manrope;color:#8792A6">Utilizado</div><div style="font:800 15px/1 Manrope;color:#101828;margin-top:6px">R$ 1.350</div></div>
+          <div style="text-align:right"><div style="font:600 11.5px/1 Manrope;color:#8792A6">Total</div><div style="font:800 15px/1 Manrope;color:#101828;margin-top:6px">R$ 6.200</div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
+        <div style="font:800 14.5px/1.3 Manrope;color:#101828">Como o limite é definido</div>
+        <div style="font:500 13px/1.6 Manrope;color:#5A6579;margin-top:10px;text-wrap:pretty">O limite pode variar conforme análise de segurança, perfil da conta, cartão utilizado e características da transação.</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+          <div style="display:flex;gap:11px;align-items:center"><div style="width:7px;height:7px;border-radius:50%;background:#1769FF;flex:none"></div><div style="font:600 13px/1.4 Manrope;color:#5A6579">Histórico de transações na Pixaí</div></div>
+          <div style="display:flex;gap:11px;align-items:center"><div style="width:7px;height:7px;border-radius:50%;background:#1769FF;flex:none"></div><div style="font:600 13px/1.4 Manrope;color:#5A6579">Limite disponível informado pelo emissor</div></div>
+          <div style="display:flex;gap:11px;align-items:center"><div style="width:7px;height:7px;border-radius:50%;background:#1769FF;flex:none"></div><div style="font:600 13px/1.4 Manrope;color:#5A6579">Verificação de identidade concluída</div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:18px;border-radius:18px;background:#FDF8EC;border:1px solid #F6E4C0;font:600 12.5px/1.55 Manrope;color:#7A5312;text-wrap:pretty">Este limite não é uma linha de crédito concedida pela Pixaí. Ele apenas indica o valor estimado que pode ser transacionado no momento.</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_notif }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Notificações</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px;display:flex;flex-direction:column;gap:10px">
+      <div onClick="{{ goto_txdetail }}" style="display:flex;gap:13px;padding:17px;border-radius:18px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF">
+        <div style="width:38px;height:38px;flex:none;border-radius:13px;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:11px;height:6px;border-left:2.4px solid #0F9D63;border-bottom:2.4px solid #0F9D63;transform:rotate(-45deg);margin-bottom:3px"></div></div>
+        <div style="flex:1"><div style="font:800 14px/1.2 Manrope;color:#101828">Pix enviado</div><div style="font:500 12.5px/1.5 Manrope;color:#5A6579;margin-top:5px">Seu Pix de R$ 1.000 para Mariana foi concluído.</div><div style="font:600 11px/1 Manrope;color:#98A2B3;margin-top:8px">Hoje, 22:18</div></div>
+      </div>
+      <div style="display:flex;gap:13px;padding:17px;border-radius:18px;background:#fff;border:1px solid #EBF0F8">
+        <div style="width:38px;height:38px;flex:none;border-radius:13px;background:#EEF3FD;display:flex;align-items:center;justify-content:center"><div style="width:17px;height:12px;border:2px solid #1769FF;border-radius:3px"></div></div>
+        <div style="flex:1"><div style="font:800 14px/1.2 Manrope;color:#101828">Cartão autorizado</div><div style="font:500 12.5px/1.5 Manrope;color:#5A6579;margin-top:5px">Seu Mastercard •••• 4821 foi autorizado.</div><div style="font:600 11px/1 Manrope;color:#98A2B3;margin-top:8px">Hoje, 22:18</div></div>
+      </div>
+      <div onClick="{{ goto_failreview }}" style="display:flex;gap:13px;padding:17px;border-radius:18px;background:#fff;border:1px solid #F6E4C0;cursor:pointer" style-hover="border-color:#F2A93B">
+        <div style="width:38px;height:38px;flex:none;border-radius:13px;background:#FDF3E4;display:flex;align-items:center;justify-content:center;font:800 17px/1 Manrope;color:#B25E09">!</div>
+        <div style="flex:1"><div style="font:800 14px/1.2 Manrope;color:#101828">Pix em análise</div><div style="font:500 12.5px/1.5 Manrope;color:#5A6579;margin-top:5px">Estamos verificando sua transação de R$ 2.800.</div><div style="font:600 11px/1 Manrope;color:#98A2B3;margin-top:8px">26 ago, 09:14</div></div>
+      </div>
+      <div onClick="{{ goto_refund }}" style="display:flex;gap:13px;padding:17px;border-radius:18px;background:#fff;border:1px solid #EBF0F8;cursor:pointer" style-hover="border-color:#1769FF">
+        <div style="width:38px;height:38px;flex:none;border-radius:13px;background:#EFF2F7;display:flex;align-items:center;justify-content:center"><div style="width:14px;height:14px;border:2px solid #5A6579;border-radius:50%;border-right-color:transparent"></div></div>
+        <div style="flex:1"><div style="font:800 14px/1.2 Manrope;color:#101828">Estorno concluído</div><div style="font:500 12.5px/1.5 Manrope;color:#5A6579;margin-top:5px">O estorno de R$ 540,20 foi enviado para seu cartão.</div><div style="font:600 11px/1 Manrope;color:#98A2B3;margin-top:8px">23 ago, 11:02</div></div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_security }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Central de Segurança</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px">
+      <div style="display:flex;gap:11px">
+        <div style="flex:1;border-radius:18px;background:#fff;border:1px solid #EBF0F8;padding:18px"><div style="width:32px;height:32px;border-radius:11px;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:11px;height:6px;border-left:2.2px solid #0F9D63;border-bottom:2.2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:3px"></div></div><div style="font:800 14px/1.2 Manrope;color:#101828;margin-top:14px">Biometria</div><div style="font:700 12px/1 Manrope;color:#0F9D63;margin-top:6px">Ativada</div></div>
+        <div style="flex:1;border-radius:18px;background:#fff;border:1px solid #EBF0F8;padding:18px"><div style="width:32px;height:32px;border-radius:11px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;gap:2.5px"><div style="width:4px;height:4px;border-radius:50%;background:#1769FF"></div><div style="width:4px;height:4px;border-radius:50%;background:#1769FF"></div><div style="width:4px;height:4px;border-radius:50%;background:#1769FF"></div></div><div style="font:800 14px/1.2 Manrope;color:#101828;margin-top:14px">PIN</div><div style="font:700 12px/1 Manrope;color:#0F9D63;margin-top:6px">Configurado</div></div>
+      </div>
+      <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Dispositivos autorizados</div><div style="display:flex;align-items:center;gap:10px"><div style="font:600 12.5px/1 Manrope;color:#98A2B3">2</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Alterar senha</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_limite }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Limites de segurança</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;cursor:pointer" style-hover="background:#FFF6F6"><div style="font:600 14px/1 Manrope;color:#D14343">Bloquear conta</div><div style="width:8px;height:8px;border-right:2px solid #E7B4B4;border-top:2px solid #E7B4B4;transform:rotate(45deg)"></div></div>
+      </div>
+      <div onClick="{{ goto_support }}" style="margin-top:12px;padding:18px;border-radius:18px;background:#fff;border:1px solid #F6D6D6;cursor:pointer" style-hover="border-color:#D14343">
+        <div style="font:800 14.5px/1.2 Manrope;color:#D14343">Denunciar fraude</div>
+        <div style="font:500 12.5px/1.5 Manrope;color:#5A6579;margin-top:7px">Recebeu uma cobrança que não reconhece? Avise a gente imediatamente.</div>
+      </div>
+      <div style="margin-top:12px;padding:18px;border-radius:18px;background:#101828">
+        <div style="font:700 13px/1.55 Manrope;color:#fff;text-wrap:pretty">Nunca pediremos sua senha ou código de confirmação por telefone ou WhatsApp.</div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_support }}">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="display:flex;align-items:center;gap:12px;padding:60px 22px 12px">
+      <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#EEF3FD"><div style="width:9px;height:9px;border-left:2px solid #101828;border-bottom:2px solid #101828;transform:rotate(45deg);margin-left:3px"></div></div>
+      <div style="font:800 17px/1.2 Manrope;color:#101828">Suporte</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 20px 30px">
+      <div style="font:800 24px/1.2 Manrope;color:#101828;letter-spacing:-.03em;padding:0 4px">Como podemos ajudar?</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Problema com Pix</div>
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Problema com cartão</div>
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Estorno</div>
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Taxas</div>
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Parcelamento</div>
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Conta e cadastro</div>
+        <div style="padding:10px 15px;border-radius:999px;background:#fff;border:1px solid #E1E7F0;font:700 12.5px/1 Manrope;color:#101828;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Segurança</div>
+      </div>
+      <div style="margin-top:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:18px">
+        <div style="font:700 11px/1 Manrope;letter-spacing:.1em;text-transform:uppercase;color:#98A2B3">Sobre qual transação?</div>
+        <div onClick="{{ goto_txdetail }}" style="margin-top:12px;display:flex;align-items:center;gap:12px;padding:13px;border-radius:14px;border:2px solid #1769FF;cursor:pointer">
+          <div style="width:36px;height:36px;border-radius:12px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 12px/1 Manrope;color:#1769FF">MA</div>
+          <div style="flex:1"><div style="font:700 13.5px/1.2 Manrope;color:#101828">Mariana Alves · R$ 1.000,00</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">31 ago · 6x R$ 184,70</div></div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:12px;padding:13px;border-radius:14px;border:1.5px solid #E6EBF3;cursor:pointer" style-hover="border-color:#1769FF">
+          <div style="width:36px;height:36px;border-radius:12px;background:#EFF2F7;display:flex;align-items:center;justify-content:center;font:800 12px/1 Manrope;color:#5A6579">JP</div>
+          <div style="flex:1"><div style="font:700 13.5px/1.2 Manrope;color:#101828">João Pedro · R$ 540,20</div><div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">22 ago · Estornado</div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:30px;height:30px;flex:none;border-radius:10px;background:#1769FF;display:flex;align-items:center;justify-content:center"><div style="width:11px;height:11px;background:#fff;transform:rotate(45deg);border-radius:2px"></div></div>
+          <div style="max-width:230px;padding:13px 15px;border-radius:4px 16px 16px 16px;background:#F1F5FA;font:500 13px/1.5 Manrope;color:#101828">Oi, Lucas. Vi que sua dúvida é sobre o Pix de R$ 1.000,00 para Mariana. Ele foi concluído às 22:18 e o cartão foi cobrado em 6x de R$ 184,70. O que você quer fazer?</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <div style="padding:11px 15px;border-radius:16px;border:1.5px solid #D6E3FB;background:#EEF3FD;font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Não reconheço esta cobrança</div>
+          <div style="padding:11px 15px;border-radius:16px;border:1.5px solid #D6E3FB;background:#EEF3FD;font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Quero o comprovante</div>
+          <div style="padding:11px 15px;border-radius:16px;border:1.5px solid #D6E3FB;background:#EEF3FD;font:700 12.5px/1 Manrope;color:#1769FF;cursor:pointer">Entender as taxas cobradas</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;height:54px;border-radius:16px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope;cursor:pointer" style-hover="background:#1C2A45">Falar com atendente</div>
+      <div style="margin-top:10px;text-align:center;font:500 12px/1 Manrope;color:#98A2B3">Tempo médio de espera: 3 min</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ s_profile }}">
+  <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
+    <div style="padding:60px 20px 110px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:60px;height:60px;border-radius:21px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 20px/1 Manrope">LS</div>
+        <div><div style="font:800 19px/1.2 Manrope;color:#101828;letter-spacing:-.02em">Lucas Silva Andrade</div><div style="font:500 12.5px/1 Manrope;color:#8792A6;margin-top:6px">***.789.123-**</div></div>
+      </div>
+      <div style="margin-top:16px;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:#E7F7EF"><div style="width:7px;height:7px;border-radius:50%;background:#0F9D63"></div><div style="font:800 11.5px/1 Manrope;color:#0F9D63">Identidade verificada</div></div>
+      <div style="margin-top:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Dados pessoais</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_security }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Segurança</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_kycstatus }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Verificação de identidade</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_limite }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Limites</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_mycards }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Cartões</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+      </div>
+      <div style="margin-top:12px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
+        <div onClick="{{ goto_notif }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Notificações</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Privacidade</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Termos e políticas</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+        <div onClick="{{ goto_support }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Ajuda</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
+      </div>
+      <div onClick="{{ goto_login }}" style="margin-top:12px;height:52px;border-radius:16px;background:#fff;border:1px solid #EBF0F8;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#D14343;cursor:pointer" style-hover="background:#FFF6F6">Sair</div>
+      <div style="margin-top:18px;text-align:center;font:500 11.5px/1.6 Manrope;color:#98A2B3">Pixaí · versão 1.0.0 (protótipo)<br>Pagamentos processados por instituição parceira autorizada.</div>
+    </div>
+  </div>
+</sc-if>
+
+        <sc-if value="{{ showNav }}">
+          <div style="position:absolute;bottom:0;left:0;right:0;height:84px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid #E9EEF6;display:flex;align-items:flex-start;padding:10px 8px 0;z-index:30">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+              <div onClick="{{ t.go }}" style="{{ t.style }}">
+                <div style="height:22px;display:flex;align-items:center;justify-content:center"><div style="{{ t.icon }}"></div></div>
+                <div style="font:700 10px/1 Manrope">{{ t.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;z-index:45;background:{{ barColor }};opacity:.32"></div>
+      </div>
+      <div style="font:600 12px/1 Manrope;color:#8792A6">{{ screenTitle }}</div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1360,&quot;height&quot;:940},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;splash&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;splash&quot;,&quot;ob&quot;,&quot;login&quot;,&quot;cadastro&quot;,&quot;otp&quot;,&quot;kyc&quot;,&quot;kycstatus&quot;,&quot;home&quot;,&quot;pixhub&quot;,&quot;pixkey&quot;,&quot;recipient&quot;,&quot;amount&quot;,&quot;payment&quot;,&quot;addcard&quot;,&quot;installments&quot;,&quot;review&quot;,&quot;auth&quot;,&quot;processing&quot;,&quot;success&quot;,&quot;receipt&quot;,&quot;history&quot;,&quot;txdetail&quot;,&quot;failauth&quot;,&quot;faillimit&quot;,&quot;failreview&quot;,&quot;failpix&quot;,&quot;refund&quot;,&quot;mycards&quot;,&quot;parcelas&quot;,&quot;limite&quot;,&quot;notif&quot;,&quot;security&quot;,&quot;support&quot;,&quot;profile&quot;,&quot;empty&quot;],&quot;section&quot;:&quot;Protótipo&quot;},&quot;showIndex&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Protótipo&quot;},&quot;autoAdvance&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Protótipo&quot;}}">
+class Component extends DCLogic {
+  RATES = {1:0.0399, 2:0.0529, 3:0.0659, 6:0.1082, 12:0.1898};
+  INSTS = [1,2,3,6,12];
+  REC = {name:'Mariana Alves da Silva', short:'Mariana Alves', first:'Mariana', ini:'MA', cpf:'***.456.789-**', bank:'Banco Exemplo S.A.', key:'mariana@email.com'};
+  CARDS = [
+    {id:'mc', brand:'Mastercard', last:'4821', holder:'Lucas Silva', limit:'R$ 7.420', main:true},
+    {id:'visa', brand:'Visa', last:'9132', holder:'Lucas Silva', limit:'R$ 3.180', main:false}
+  ];
+  SCREENS = ['splash','ob','login','cadastro','otp','kyc','kycstatus','home','pixhub','pixkey','recipient','amount','payment','addcard','installments','review','auth','processing','success','receipt','history','txdetail','failauth','faillimit','failreview','failpix','refund','mycards','parcelas','limite','notif','security','support','profile','empty'];
+  NAV = [
+    ['g','Entrada'],['splash','Splash'],['ob','Onboarding'],['login','Login'],['cadastro','Criar conta'],['otp','Código SMS'],['kyc','Verificação de identidade'],['kycstatus','Estados da verificação'],
+    ['g','Fluxo Pix no cartão'],['home','Início'],['pixhub','Hub do Pix'],['pixkey','Chave Pix'],['recipient','Destinatário'],['amount','Valor'],['payment','Escolher cartão'],['addcard','Adicionar cartão'],['installments','Parcelamento'],['review','Revisão'],['auth','Autenticação'],['processing','Processando'],['success','Pix enviado'],['receipt','Comprovante'],
+    ['g','Erros e estornos'],['failauth','Cartão não autorizado'],['faillimit','Limite insuficiente'],['failreview','Transação em análise'],['failpix','Pix não concluído'],['refund','Acompanhar estorno'],
+    ['g','Conta'],['history','Transações'],['txdetail','Detalhe da transação'],['empty','Estado vazio'],['mycards','Meus cartões'],['parcelas','Parcelamentos'],['limite','Limite Pix no cartão'],['notif','Notificações'],['security','Central de Segurança'],['support','Suporte'],['profile','Perfil']
+  ];
+  TABS = [['home','Início',['home']],['pixhub','Pix',['pixhub','pixkey','recipient','amount','payment','installments','review']],['history','Transações',['history','txdetail','empty']],['mycards','Cartões',['mycards','parcelas']],['profile','Perfil',['profile','security','limite','notif','support']]];
+  DARK = ['splash','auth','processing'];
+
+  state = {screen:'splash', prev:[], ob:0, amount:'', desc:'', card:'mc', inst:6, kyc:1, otp:'', feeOpen:false, proc:0, filter:'Todas', terms:true, chat:0};
+
+  componentDidMount(){
+    const start = this.props.startScreen;
+    if(start && start!=='splash' && this.SCREENS.indexOf(start)>=0){ this.setState({screen:start, prev:[]}); return; }
+    if(this.props.autoAdvance === false) return;
+    this._t = setTimeout(()=>{ if(this.state.screen==='splash') this.go('ob'); }, 1900);
+  }
+  componentWillUnmount(){ clearTimeout(this._t); clearTimeout(this._p); }
+  componentDidUpdate(_, prev){
+    if(this.state.screen==='processing' && prev.screen!=='processing') this.runProc();
+  }
+  runProc(){
+    clearTimeout(this._p);
+    this.setState({proc:0});
+    const tick = (i)=>{
+      this._p = setTimeout(()=>{
+        if(this.state.screen!=='processing') return;
+        if(i>3){ this.go('success'); return; }
+        this.setState({proc:i}); tick(i+1);
+      }, 900);
+    };
+    tick(1);
+  }
+  go(s){ this.setState(st=>({screen:s, prev:st.screen===s?st.prev:[...st.prev, st.screen], feeOpen:false}), ()=>{ if(s==='processing') this.runProc(); }); }
+  jump(s){ this.setState({screen:s, prev:[], feeOpen:false}, ()=>{ if(s==='processing') this.runProc(); }); }
+  back(){ this.setState(st=> st.prev.length ? {screen:st.prev[st.prev.length-1], prev:st.prev.slice(0,-1)} : st); }
+  brl(n){ return 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  renderVals(){
+    const st = this.state, cur = st.screen, v = {};
+    this.SCREENS.forEach(k => { v['s_'+k] = cur===k; v['goto_'+k] = ()=>this.go(k); });
+    v.obNotLast = st.ob < 3;
+    v.kycNext = ()=> st.kyc<4 ? this.setState({kyc:st.kyc+1}) : this.go('kycstatus');
+    v.kycPrev = ()=> st.kyc>1 ? this.setState({kyc:st.kyc-1}) : this.back();
+    [0,1,2,3].forEach(i => v['ob'+i] = st.ob===i);
+    [1,2,3,4].forEach(i => v['ky'+i] = st.kyc===i);
+    [0,1,2,3].forEach(i => { v['p'+i+'done'] = st.proc>i; v['p'+i+'now'] = st.proc===i; });
+
+    v.showIndex = this.props.showIndex !== false;
+    const dark = this.DARK.indexOf(cur) >= 0;
+    v.barColor = dark ? '#FFFFFF' : '#101828';
+    v.showNav = ['home','pixhub','history','mycards','profile','empty','parcelas'].indexOf(cur) >= 0;
+
+    const found = this.NAV.filter(n => n[0]===cur)[0];
+    v.screenTitle = found ? found[1] : '';
+
+    v.nav = this.NAV.map((n, i) => n[0]==='g'
+      ? {key:'g'+i, isGroup:true, isItem:false, label:n[1]}
+      : {key:n[0], isGroup:false, isItem:true, label:n[1], go:()=>this.jump(n[0]),
+         style:'padding:9px 10px;border-radius:9px;cursor:pointer;font:'+(cur===n[0]?'700':'500')+' 12.5px/1.25 Manrope;color:'+(cur===n[0]?'#1769FF':'#5A6579')+';background:'+(cur===n[0]?'#EEF3FD':'transparent')+';transition:background .12s'});
+
+    v.tabs = this.TABS.map(t => {
+      const on = t[2].indexOf(cur) >= 0;
+      const ICONS = {
+        home:'width:19px;height:19px;border-radius:6px;background:currentColor',
+        pixhub:'width:15px;height:15px;border-radius:3px;background:currentColor;transform:rotate(45deg)',
+        history:'width:19px;height:16px;background:repeating-linear-gradient(currentColor 0 2.5px,transparent 2.5px 7px)',
+        mycards:'width:22px;height:15px;border:2px solid currentColor;border-radius:4px',
+        profile:'width:19px;height:19px;border:2px solid currentColor;border-radius:50%'
+      };
+      return {key:t[0], label:t[1], go:()=>this.jump(t[0]), icon:ICONS[t[0]],
+        style:'flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;cursor:pointer;color:'+(on?'#1769FF':'#98A2B3')};
+    });
+
+    const cents = st.amount ? parseInt(st.amount,10) : 0;
+    const amt = cents > 0 ? cents/100 : 1000;
+    const n = st.inst, rate = this.RATES[n];
+    const total = amt*(1+rate), fee = total-amt, per = total/n;
+    v.hasAmount = cents > 0;
+    v.amtTyped = this.brl(cents/100);
+    v.amtTypedStyle = 'font:800 44px/1 Manrope;letter-spacing:-.03em;color:'+(cents>0?'#101828':'#C3CBD9');
+    v.amt = this.brl(amt);
+    v.amtPlain = this.brl(amt);
+    v.fee = this.brl(fee);
+    v.total = this.brl(total);
+    v.per = this.brl(per);
+    v.instN = n + 'x';
+    v.instLabel = n===1 ? ('1x de ' + this.brl(total)) : (n + 'x de ' + this.brl(per));
+    v.instShort = n + 'x ' + this.brl(per);
+    v.ratePct = (rate*100).toFixed(2).replace('.',',') + '%';
+    v.feeOpen = st.feeOpen;
+    v.toggleFee = ()=>this.setState(s=>({feeOpen:!s.feeOpen}));
+    v.feeProc = this.brl(fee*0.62); v.feeAcq = this.brl(fee*0.31); v.feeIof = this.brl(fee*0.07);
+
+    v.instOpts = this.INSTS.map(i => {
+      const r = this.RATES[i], t = amt*(1+r), p = t/i, sel = st.inst===i;
+      return {key:i, n:i+'x', sel:sel, go:()=>this.setState({inst:i}),
+        head: i===1 ? this.brl(t) : (i + 'x de ' + this.brl(p)),
+        total:'Total ' + this.brl(t), fee:'Taxa ' + this.brl(t-amt),
+        style:'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-radius:16px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s;border:'+(sel?'2px solid #1769FF':'1.5px solid #E6EBF3')+';box-shadow:'+(sel?'0 8px 20px rgba(23,105,255,.14)':'none'),
+        dot:'width:22px;height:22px;border-radius:50%;flex:none;border:'+(sel?'7px solid #1769FF':'2px solid #CDD5E1'),
+        headStyle:'font:800 16px/1.2 Manrope;color:'+(sel?'#1769FF':'#101828')};
+    });
+
+    const cardsSel = this.CARDS.map(c => {
+      const sel = st.card===c.id;
+      return {key:c.id, brand:c.brand.toUpperCase(), last:'•••• '+c.last, holder:c.holder, limit:c.limit, sel:sel,
+        go:()=>this.setState({card:c.id}),
+        style:'display:flex;align-items:center;gap:14px;padding:16px;border-radius:18px;background:#fff;cursor:pointer;border:'+(sel?'2px solid #1769FF':'1.5px solid #E6EBF3')+';box-shadow:'+(sel?'0 8px 20px rgba(23,105,255,.13)':'none'),
+        dot:'width:22px;height:22px;border-radius:50%;flex:none;border:'+(sel?'7px solid #1769FF':'2px solid #CDD5E1')};
+    });
+    v.cardsSel = cardsSel;
+    const cc = this.CARDS.filter(c=>c.id===st.card)[0];
+    v.cardLabel = cc.brand + ' •••• ' + cc.last;
+    v.cardLast = '•••• ' + cc.last;
+    v.cardBrand = cc.brand;
+
+    v.rec = this.REC.name; v.recShort = this.REC.short; v.recFirst = this.REC.first;
+    v.recLine = this.REC.first + ' receberá ' + this.brl(amt) + ' via Pix.';
+    v.chargeLine = 'Seu cartão será cobrado em ' + this.brl(total) + '.';
+
+    for(let d=0; d<10; d++){ const dd = String(d); v['k'+dd] = ()=>this.setState(s=>({amount:(s.amount+dd).replace(/^0+/,'').slice(0,9)})); }
+    [0,1,2,3].forEach(i=>{
+      const done = st.proc>i, now = st.proc===i;
+      v['dot'+i] = 'width:22px;height:22px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .3s;background:'+(done?'#3BD68A':(now?'rgba(255,255,255,.28)':'rgba(255,255,255,.1)'))+(now?';animation:pulseDot 1.1s infinite':'');
+      v['lbl'+i] = 'font:'+(done||now?'700':'500')+' 15px/1 Manrope;transition:color .3s;color:'+(done?'#fff':(now?'rgba(255,255,255,.9)':'rgba(255,255,255,.4)'));
+    });
+    v.key = (d)=>this.setState(s=>({amount: (s.amount+d).replace(/^0+/,'').slice(0,9)}));
+    v.del = ()=>this.setState(s=>({amount: s.amount.slice(0,-1)}));
+    v.goto = (s)=>()=>this.go(s);
+    v.back = ()=>this.back();
+    v.setOb = (i)=>()=>this.setState({ob:i});
+    v.obNext = ()=>this.setState(s=> s.ob<3 ? {ob:s.ob+1} : {screen:'cadastro', prev:[...s.prev,'ob']});
+    v.obDots = [0,1,2,3].map(i=>({key:i, go:()=>this.setState({ob:i}),
+      style:'height:6px;border-radius:3px;cursor:pointer;transition:width .2s;width:'+(st.ob===i?'26px':'6px')+';background:'+(st.ob===i?'#1769FF':'#D3DBE7')}));
+    v.setKyc = (i)=>()=>this.setState({kyc:i});
+    v.kycStep = 'Etapa ' + st.kyc + ' de 4';
+    v.kycBar = 'height:100%;border-radius:3px;background:#1769FF;transition:width .3s;width:'+(st.kyc*25)+'%';
+
+    v.filters = ['Todas','Concluídas','Em processamento','Canceladas','Estornadas'].map(f=>({key:f, label:f,
+      go:()=>this.setState({filter:f}),
+      style:'padding:8px 14px;border-radius:999px;white-space:nowrap;cursor:pointer;font:700 12.5px/1 Manrope;border:1px solid '+(st.filter===f?'#1769FF':'#E1E7F0')+';background:'+(st.filter===f?'#1769FF':'#fff')+';color:'+(st.filter===f?'#fff':'#5A6579')}));
+
+    v.txAug = [
+      {key:1, ini:'MA', name:'Mariana Alves', pix:'R$ 1.000,00', pay:'6x R$ 184,70', when:'31 ago · 22:18', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
+      {key:2, ini:'MC', name:'Mercado Central', pix:'R$ 127,90', pay:'1x R$ 133,00', when:'30 ago · 19:04', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
+      {key:3, ini:'CF', name:'Carlos Ferreira', pix:'R$ 850,00', pay:'3x R$ 302,00', when:'28 ago · 11:20', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
+      {key:4, ini:'AL', name:'Aluguel · Imob. Vila', pix:'R$ 2.800,00', pay:'12x R$ 277,60', when:'26 ago · 09:12', st:'Em análise', c:'#B25E09', bg:'#FDF3E4', go:()=>this.go('failreview')},
+      {key:5, ini:'JP', name:'João Pedro', pix:'R$ 540,20', pay:'2x R$ 284,30', when:'22 ago · 17:45', st:'Estornado', c:'#5A6579', bg:'#EFF2F7', go:()=>this.go('refund')}
+    ];
+    v.txJul = [
+      {key:6, ini:'RS', name:'Renata Souza', pix:'R$ 320,00', pay:'1x R$ 332,80', when:'28 jul · 14:02', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
+      {key:7, ini:'PA', name:'Padaria Aurora', pix:'R$ 78,50', pay:'1x R$ 81,63', when:'19 jul · 08:31', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')}
+    ];
+    v.freq = ['Mariana','João','Aluguel','Carlos','Mercado'].map((f,i)=>({key:f, name:f, ini:f.slice(0,2).toUpperCase(), go:()=>this.go('amount')}));
+    return v;
+  }
+}
+</script>
+</body>
+</html>
