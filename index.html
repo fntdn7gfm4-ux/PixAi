@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixaí</title>
+<script src="./config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -172,18 +175,19 @@ a:hover{color:#0F4FCC}
       <div style="display:flex;flex-direction:column;gap:14px;margin-top:32px">
         <div>
           <div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:8px">CPF</div>
-          <div style="height:54px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">123.456.789-00</div>
+          <input id="login-cpf" value="{{ loginCpf }}" placeholder="123.456.789-00" inputmode="numeric" style="width:100%;height:54px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" />
         </div>
         <div>
           <div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:8px">Senha</div>
-          <div style="height:54px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font:600 15px/1 Manrope;color:#101828;letter-spacing:.2em">••••••••<div style="font:700 12px/1 Manrope;color:#1769FF;letter-spacing:0;cursor:pointer">Mostrar</div></div>
+          <input id="login-senha" value="{{ loginSenha }}" type="password" placeholder="Sua senha" style="width:100%;height:54px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;letter-spacing:.1em;font-family:Manrope" />
         </div>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:14px"><div style="font:700 13px/1 Manrope;color:#1769FF;cursor:pointer">Esqueci minha senha</div></div>
+      <sc-if value="{{ hasLoginError }}">
+        <div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:#FFF6F6;border:1px solid #F6D6D6;font:600 12.5px/1.5 Manrope;color:#D14343">{{ loginError }}</div>
+      </sc-if>
     </div>
     <div style="padding:18px 26px 34px;display:flex;flex-direction:column;gap:12px">
-      <div onClick="{{ goto_home }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Entrar</div>
-      <div onClick="{{ goto_home }}" style="height:54px;border-radius:16px;border:1.5px solid #E6EBF3;display:flex;align-items:center;justify-content:center;gap:10px;font:700 15px/1 Manrope;color:#101828;cursor:pointer" style-hover="background:#F7F9FC"><div style="width:18px;height:18px;border:2px solid #101828;border-radius:6px"></div>Entrar com biometria</div>
+      <div id="login-submit" onClick="{{ doLogin }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">{{ loginBtnLabel }}</div>
       <div onClick="{{ goto_cadastro }}" style="text-align:center;font:600 13.5px/1.4 Manrope;color:#8792A6;padding-top:6px;cursor:pointer">Não tem conta? <span style="color:#1769FF;font-weight:700">Criar agora</span></div>
     </div>
   </div>
@@ -198,21 +202,25 @@ a:hover{color:#0F4FCC}
       <div style="font:800 28px/1.15 Manrope;color:#101828;letter-spacing:-.03em">Criar conta</div>
       <div style="font:500 14.5px/1.5 Manrope;color:#5A6579;margin-top:8px">Leva menos de dois minutos.</div>
       <div style="display:flex;flex-direction:column;gap:14px;margin-top:26px">
-        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Nome completo</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">Lucas Silva Andrade</div></div>
-        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CPF</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">123.456.789-00</div></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Nome completo</div><input id="cad-nome" value="{{ cadNome }}" placeholder="Seu nome completo" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CPF</div><input id="cad-cpf" value="{{ cadCpf }}" placeholder="123.456.789-00" inputmode="numeric" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
         <div style="display:flex;gap:12px">
-          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Data de nascimento</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">14/03/1994</div></div>
-          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Celular</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 14px;font:600 15px/1 Manrope;color:#101828">(11) 98765-4321</div></div>
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Data de nascimento</div><input id="cad-nasc" value="{{ cadNasc }}" placeholder="14/03/1994" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Celular</div><input id="cad-celular" value="{{ cadCelular }}" placeholder="(11) 98765-4321" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 14px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
         </div>
-        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">E-mail</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">lucas.andrade@email.com</div></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">E-mail</div><input id="cad-email" value="{{ cadEmail }}" type="email" placeholder="voce@email.com" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Senha</div><input id="cad-senha" value="{{ cadSenha }}" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#F9FBFD;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
       </div>
-      <div style="display:flex;gap:12px;margin-top:24px;align-items:flex-start">
-        <div style="width:22px;height:22px;flex:none;border-radius:7px;background:#1769FF;display:flex;align-items:center;justify-content:center;margin-top:1px"><div style="width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);margin-bottom:2px"></div></div>
+      <div style="display:flex;gap:12px;margin-top:24px;align-items:flex-start;cursor:pointer" onClick="{{ toggleTerms }}">
+        <div style="{{ termsBoxStyle }}"><sc-if value="{{ terms }}"><div style="width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);margin-bottom:2px"></div></sc-if></div>
         <div style="font:500 13px/1.5 Manrope;color:#5A6579;text-wrap:pretty">Li e concordo com os <a href="#">Termos de Uso</a> e <a href="#">Política de Privacidade</a>.</div>
       </div>
+      <sc-if value="{{ hasCadError }}">
+        <div style="margin-top:16px;padding:12px 14px;border-radius:12px;background:#FFF6F6;border:1px solid #F6D6D6;font:600 12.5px/1.5 Manrope;color:#D14343">{{ cadError }}</div>
+      </sc-if>
     </div>
     <div style="padding:16px 26px 34px">
-      <div onClick="{{ goto_otp }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div>
+      <div id="cad-submit" onClick="{{ doSignup }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">{{ cadBtnLabel }}</div>
     </div>
   </div>
 </sc-if>
@@ -313,7 +321,8 @@ a:hover{color:#0F4FCC}
       </div>
       <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
         <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:4px;border-left:2px solid #0F9D63;border-bottom:2px solid #0F9D63;transform:rotate(-45deg);margin-bottom:2px"></div></div><div style="font:800 15px/1 Manrope;color:#101828">Verificado</div></div>
-        <div style="font:500 13.5px/1.55 Manrope;color:#5A6579;margin-top:10px">Conta liberada para Pix no cartão, com limite estimado de R$ 4.850,00.</div>
+        <div style="font:500 13.5px/1.55 Manrope;color:#5A6579;margin-top:10px">Conta liberada para Pix no cartão, com limite estimado de {{ limiteDisponivel }}.</div>
+        <div onClick="{{ goto_home }}" style="margin-top:14px;height:44px;border-radius:13px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:700 14px/1 Manrope;cursor:pointer">Ir para o início</div>
       </div>
       <div style="border-radius:20px;background:#fff;border:1px solid #FBE3C4;padding:20px">
         <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#FDF3E4;display:flex;align-items:center;justify-content:center;font:800 13px/1 Manrope;color:#B25E09">!</div><div style="font:800 15px/1 Manrope;color:#101828">Precisamos de mais informações</div></div>
@@ -333,9 +342,9 @@ a:hover{color:#0F4FCC}
   <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
     <div style="padding:62px 20px 110px">
       <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:44px;height:44px;border-radius:15px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope">LS</div>
+        <div style="width:44px;height:44px;border-radius:15px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 15px/1 Manrope">{{ profileIniciais }}</div>
         <div style="flex:1">
-          <div style="font:800 18px/1.2 Manrope;color:#101828;letter-spacing:-.02em">Olá, Lucas</div>
+          <div style="font:800 18px/1.2 Manrope;color:#101828;letter-spacing:-.02em">Olá, {{ profileFirst }}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:3px"><div style="width:14px;height:14px;border-radius:50%;background:#E7F7EF;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:3px;border-left:1.6px solid #0F9D63;border-bottom:1.6px solid #0F9D63;transform:rotate(-45deg);margin-bottom:1px"></div></div><div style="font:700 11.5px/1 Manrope;color:#0F9D63">Conta verificada</div></div>
         </div>
         <div onClick="{{ goto_notif }}" style="width:42px;height:42px;border-radius:14px;background:#fff;border:1px solid #E9EEF6;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" style-hover="background:#EEF3FD"><div style="width:16px;height:16px;border:2px solid #101828;border-radius:6px 6px 3px 3px"></div><div style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#D14343;border:2px solid #fff"></div></div>
@@ -356,7 +365,7 @@ a:hover{color:#0F4FCC}
 
       <div style="margin-top:16px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;padding:20px">
         <div style="font:700 12.5px/1 Manrope;color:#5A6579">Seu limite para Pix no cartão</div>
-        <div style="font:800 26px/1 Manrope;color:#101828;letter-spacing:-.03em;margin-top:10px">R$ 4.850,00 <span style="font:600 14px/1 Manrope;color:#8792A6">disponível</span></div>
+        <div style="font:800 26px/1 Manrope;color:#101828;letter-spacing:-.03em;margin-top:10px">{{ limiteDisponivel }} <span style="font:600 14px/1 Manrope;color:#8792A6">disponível</span></div>
         <div style="height:8px;border-radius:4px;background:#F1F4F9;margin-top:16px"><div style="width:78%;height:100%;border-radius:4px;background:linear-gradient(90deg,#1769FF,#4C8CFF)"></div></div>
         <div style="font:500 12px/1.5 Manrope;color:#8792A6;margin-top:12px">Limite estimado para transações elegíveis.</div>
         <div onClick="{{ goto_limite }}" style="margin-top:14px;font:700 13px/1 Manrope;color:#1769FF;cursor:pointer">Entender meu limite →</div>
@@ -512,7 +521,7 @@ a:hover{color:#0F4FCC}
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px">
         <div style="{{ amtTypedStyle }}">{{ amtTyped }}</div>
         <div style="height:46px;border-radius:13px;border:1.5px dashed #D8DFEA;display:flex;align-items:center;padding:0 14px;font:600 13.5px/1 Manrope;color:#98A2B3;cursor:pointer" style-hover="border-color:#1769FF;color:#1769FF">Adicionar descrição</div>
-        <div style="font:600 12.5px/1.5 Manrope;color:#8792A6">Limite disponível para esta operação: <span style="color:#101828;font-weight:800">R$ 4.850,00</span></div>
+        <div style="font:600 12.5px/1.5 Manrope;color:#8792A6">Limite disponível para esta operação: <span style="color:#101828;font-weight:800">{{ limiteDisponivel }}</span></div>
       </div>
     </div>
     <div style="padding:0 20px 12px"><div onClick="{{ goto_payment }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Continuar</div></div>
@@ -546,7 +555,7 @@ a:hover{color:#0F4FCC}
             <div style="flex:1;min-width:0">
               <div style="font:800 15px/1 Manrope;color:#101828;letter-spacing:.04em">{{ c.last }}</div>
               <div style="font:500 12px/1 Manrope;color:#8792A6;margin-top:5px">{{ c.holder }}</div>
-              <div style="font:600 11.5px/1 Manrope;color:#0F9D63;margin-top:6px">Limite estimado {{ c.limit }}</div>
+              <sc-if value="{{ c.isMain }}"><div style="font:600 11.5px/1 Manrope;color:#0F9D63;margin-top:6px">Cartão principal</div></sc-if>
             </div>
             <div style="{{ c.dot }}"></div>
           </div>
@@ -576,13 +585,16 @@ a:hover{color:#0F4FCC}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:13px;margin-top:20px">
-        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Número do cartão</div><div style="height:52px;border-radius:14px;border:2px solid #1769FF;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">5412 8834</div></div>
-        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Nome impresso no cartão</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">LUCAS SILVA</div></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Número do cartão</div><input id="card-numero" placeholder="0000 0000 0000 0000" inputmode="numeric" style="width:100%;height:52px;border-radius:14px;border:2px solid #1769FF;background:#fff;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
+        <div><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Nome impresso no cartão</div><input id="card-nome" placeholder="NOME COMO NO CARTÃO" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
         <div style="display:flex;gap:12px">
-          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Validade</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828">08/30</div></div>
-          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CVV</div><div style="height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 15px/1 Manrope;color:#101828;letter-spacing:.2em">•••</div></div>
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">Validade</div><input id="card-validade" placeholder="08/30" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;padding:0 16px;font:600 15px/1 Manrope;color:#101828;font-family:Manrope" /></div>
+          <div style="flex:1"><div style="font:700 12px/1 Manrope;color:#5A6579;margin-bottom:7px">CVV</div><input id="card-cvv" type="password" maxlength="4" placeholder="•••" style="width:100%;height:52px;border-radius:14px;border:1.5px solid #E6EBF3;background:#fff;padding:0 16px;font:600 15px/1 Manrope;color:#101828;letter-spacing:.2em;font-family:Manrope" /></div>
         </div>
       </div>
+      <sc-if value="{{ hasAddCardError }}">
+        <div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:#FFF6F6;border:1px solid #F6D6D6;font:600 12.5px/1.5 Manrope;color:#D14343">{{ addCardError }}</div>
+      </sc-if>
       <div style="display:flex;gap:12px;margin-top:18px;align-items:center">
         <div style="width:22px;height:22px;flex:none;border-radius:7px;background:#1769FF;display:flex;align-items:center;justify-content:center"><div style="width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);margin-bottom:2px"></div></div>
         <div style="font:600 13px/1.4 Manrope;color:#5A6579">Salvar cartão para próximas transações</div>
@@ -592,7 +604,7 @@ a:hover{color:#0F4FCC}
         <div style="font:500 12.5px/1.55 Manrope;color:#5A6579;text-wrap:pretty">Seus dados são protegidos e processados por parceiros certificados. A Pixaí não armazena o número completo nem o CVV.</div>
       </div>
     </div>
-    <div style="padding:14px 20px 34px"><div onClick="{{ goto_payment }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Adicionar cartão</div></div>
+    <div style="padding:14px 20px 34px"><div id="addcard-submit" onClick="{{ doAddCard }}" style="height:54px;border-radius:16px;background:#1769FF;color:#fff;display:flex;align-items:center;justify-content:center;font:800 16px/1 Manrope;cursor:pointer;box-shadow:0 8px 20px rgba(23,105,255,.3)" style-hover="background:#0F55D6">Adicionar cartão</div></div>
   </div>
 </sc-if>
 
@@ -918,40 +930,32 @@ a:hover{color:#0F4FCC}
       </div>
     </div>
     <div style="flex:1;overflow-y:auto;padding:6px 20px 110px">
-      <div style="font:800 11px/1 Manrope;letter-spacing:.12em;text-transform:uppercase;color:#98A2B3;padding:12px 4px 10px">Agosto 2026</div>
-      <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
-        <sc-for list="{{ txAug }}" as="t" hint-placeholder-count="5">
-          <div onClick="{{ t.go }}" style="display:flex;gap:13px;padding:16px;cursor:pointer;border-bottom:1px solid #F1F4F9" style-hover="background:#F9FBFE">
-            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">{{ t.ini }}</div>
+      <sc-if value="{{ txIsEmpty }}">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px">
+          <div style="width:76px;height:76px;border-radius:26px;background:#fff;border:1px solid #EBF0F8;display:flex;align-items:center;justify-content:center"><div style="width:24px;height:24px;background:#E3EAF5;transform:rotate(45deg);border-radius:5px"></div></div>
+          <div style="font:800 17px/1.3 Manrope;color:#101828;margin-top:18px;text-align:center">Nenhuma transação ainda</div>
+          <div style="font:500 13px/1.5 Manrope;color:#8792A6;margin-top:6px;text-align:center">Os Pix que você enviar vão aparecer aqui.</div>
+        </div>
+      </sc-if>
+      <sc-for list="{{ txFlat }}" as="it" hint-placeholder-count="6">
+        <sc-if value="{{ it.isGroup }}">
+          <div style="font:800 11px/1 Manrope;letter-spacing:.12em;text-transform:uppercase;color:#98A2B3;padding:16px 4px 10px">{{ it.label }}</div>
+        </sc-if>
+        <sc-if value="{{ it.isItem }}">
+          <div onClick="{{ it.go }}" style="display:flex;gap:13px;padding:16px;margin-bottom:8px;cursor:pointer;border-radius:18px;background:#fff;border:1px solid #EBF0F8" style-hover="background:#F9FBFE">
+            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">{{ it.ini }}</div>
             <div style="flex:1;min-width:0">
-              <div style="font:700 14.5px/1.2 Manrope;color:#101828">{{ t.name }}</div>
-              <div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">{{ t.when }}</div>
-              <div style="font:600 11.5px/1 Manrope;color:#5A6579;margin-top:7px">Cartão {{ t.pay }}</div>
+              <div style="font:700 14.5px/1.2 Manrope;color:#101828">{{ it.name }}</div>
+              <div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">{{ it.when }}</div>
+              <div style="font:600 11.5px/1 Manrope;color:#5A6579;margin-top:7px">Cartão {{ it.pay }}</div>
             </div>
             <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:7px">
-              <div style="font:800 14.5px/1 Manrope;color:#101828">{{ t.pix }}</div>
-              <div style="padding:4px 9px;border-radius:999px;font:700 10.5px/1 Manrope;background:{{ t.bg }};color:{{ t.c }}">{{ t.st }}</div>
+              <div style="font:800 14.5px/1 Manrope;color:#101828">{{ it.pix }}</div>
+              <div style="padding:4px 9px;border-radius:999px;font:700 10.5px/1 Manrope;background:{{ it.bg }};color:{{ it.c }}">{{ it.st }}</div>
             </div>
           </div>
-        </sc-for>
-      </div>
-      <div style="font:800 11px/1 Manrope;letter-spacing:.12em;text-transform:uppercase;color:#98A2B3;padding:22px 4px 10px">Julho 2026</div>
-      <div style="border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
-        <sc-for list="{{ txJul }}" as="t" hint-placeholder-count="2">
-          <div onClick="{{ t.go }}" style="display:flex;gap:13px;padding:16px;cursor:pointer;border-bottom:1px solid #F1F4F9" style-hover="background:#F9FBFE">
-            <div style="width:42px;height:42px;flex:none;border-radius:14px;background:#EEF3FD;display:flex;align-items:center;justify-content:center;font:800 13.5px/1 Manrope;color:#1769FF">{{ t.ini }}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font:700 14.5px/1.2 Manrope;color:#101828">{{ t.name }}</div>
-              <div style="font:500 11.5px/1 Manrope;color:#8792A6;margin-top:5px">{{ t.when }}</div>
-              <div style="font:600 11.5px/1 Manrope;color:#5A6579;margin-top:7px">Cartão {{ t.pay }}</div>
-            </div>
-            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:7px">
-              <div style="font:800 14.5px/1 Manrope;color:#101828">{{ t.pix }}</div>
-              <div style="padding:4px 9px;border-radius:999px;font:700 10.5px/1 Manrope;background:{{ t.bg }};color:{{ t.c }}">{{ t.st }}</div>
-            </div>
-          </div>
-        </sc-for>
-      </div>
+        </sc-if>
+      </sc-for>
     </div>
   </div>
 </sc-if>
@@ -1014,19 +1018,21 @@ a:hover{color:#0F4FCC}
   <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
     <div style="padding:60px 20px 110px">
       <div style="font:800 26px/1.2 Manrope;color:#101828;letter-spacing:-.03em">Meus cartões</div>
-      <div style="margin-top:20px;height:180px;border-radius:22px;background:linear-gradient(140deg,#101828 0%,#223358 60%,#31456F 100%);padding:22px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 36px rgba(16,24,40,.24)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="width:38px;height:28px;border-radius:6px;background:rgba(255,255,255,.26)"></div>
-          <div style="padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);font:800 10px/1 Manrope;color:#fff;letter-spacing:.06em">PRINCIPAL</div>
+      <sc-if value="{{ noCards }}">
+        <div style="margin-top:20px;padding:22px;border-radius:20px;background:#fff;border:1.5px dashed #C6D2E4;text-align:center">
+          <div style="font:600 13.5px/1.5 Manrope;color:#5A6579">Você ainda não tem nenhum cartão salvo.</div>
         </div>
-        <div style="font:700 19px/1 Manrope;color:#fff;letter-spacing:.18em">•••• 4821</div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="font:700 12.5px/1 Manrope;color:rgba(255,255,255,.82)">Lucas Silva</div><div style="font:800 12px/1 Manrope;color:#fff;letter-spacing:.06em">MASTERCARD</div></div>
-      </div>
-      <div style="margin-top:12px;height:180px;border-radius:22px;background:linear-gradient(140deg,#123A9E,#1769FF);padding:22px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 36px rgba(23,105,255,.24)">
-        <div style="width:38px;height:28px;border-radius:6px;background:rgba(255,255,255,.28)"></div>
-        <div style="font:700 19px/1 Manrope;color:#fff;letter-spacing:.18em">•••• 9132</div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="font:700 12.5px/1 Manrope;color:rgba(255,255,255,.82)">Lucas Silva</div><div style="font:800 12px/1 Manrope;color:#fff;letter-spacing:.06em">VISA</div></div>
-      </div>
+      </sc-if>
+      <sc-for list="{{ myCardsList }}" as="c" hint-placeholder-count="2">
+        <div style="{{ c.cardStyle }}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="width:38px;height:28px;border-radius:6px;background:rgba(255,255,255,.26)"></div>
+            <sc-if value="{{ c.isMain }}"><div style="padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);font:800 10px/1 Manrope;color:#fff;letter-spacing:.06em">PRINCIPAL</div></sc-if>
+          </div>
+          <div style="font:700 19px/1 Manrope;color:#fff;letter-spacing:.18em">•••• {{ c.last4 }}</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end"><div style="font:700 12.5px/1 Manrope;color:rgba(255,255,255,.82)">{{ c.holder }}</div><div style="font:800 12px/1 Manrope;color:#fff;letter-spacing:.06em">{{ c.brandUpper }}</div></div>
+        </div>
+      </sc-for>
       <div style="margin-top:16px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Definir como principal</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
         <div onClick="{{ goto_history }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Ver transações do cartão</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
@@ -1088,7 +1094,7 @@ a:hover{color:#0F4FCC}
     <div style="flex:1;overflow-y:auto;padding:6px 20px 30px">
       <div style="border-radius:22px;background:#fff;border:1px solid #EBF0F8;padding:24px">
         <div style="font:600 12px/1 Manrope;color:#8792A6">Disponível agora</div>
-        <div style="font:800 36px/1 Manrope;color:#101828;letter-spacing:-.04em;margin-top:10px">R$ 4.850</div>
+        <div style="font:800 36px/1 Manrope;color:#101828;letter-spacing:-.04em;margin-top:10px">{{ limiteDisponivel }}</div>
         <div style="height:12px;border-radius:6px;background:#EDF1F7;margin-top:22px;overflow:hidden;display:flex"><div style="width:78%;background:linear-gradient(90deg,#1769FF,#4C8CFF)"></div></div>
         <div style="display:flex;justify-content:space-between;margin-top:16px">
           <div><div style="font:600 11.5px/1 Manrope;color:#8792A6">Utilizado</div><div style="font:800 15px/1 Manrope;color:#101828;margin-top:6px">R$ 1.350</div></div>
@@ -1213,8 +1219,8 @@ a:hover{color:#0F4FCC}
   <div style="position:absolute;inset:0;overflow-y:auto;background:#F7F9FC;animation:scrIn .22s ease-out">
     <div style="padding:60px 20px 110px">
       <div style="display:flex;align-items:center;gap:14px">
-        <div style="width:60px;height:60px;border-radius:21px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 20px/1 Manrope">LS</div>
-        <div><div style="font:800 19px/1.2 Manrope;color:#101828;letter-spacing:-.02em">Lucas Silva Andrade</div><div style="font:500 12.5px/1 Manrope;color:#8792A6;margin-top:6px">***.789.123-**</div></div>
+        <div style="width:60px;height:60px;border-radius:21px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font:800 20px/1 Manrope">{{ profileIniciais }}</div>
+        <div><div style="font:800 19px/1.2 Manrope;color:#101828;letter-spacing:-.02em">{{ profileNome }}</div><div style="font:500 12.5px/1 Manrope;color:#8792A6;margin-top:6px">{{ profileCpfMasked }}</div></div>
       </div>
       <div style="margin-top:16px;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:#E7F7EF"><div style="width:7px;height:7px;border-radius:50%;background:#0F9D63"></div><div style="font:800 11.5px/1 Manrope;color:#0F9D63">Identidade verificada</div></div>
       <div style="margin-top:18px;border-radius:20px;background:#fff;border:1px solid #EBF0F8;overflow:hidden">
@@ -1230,8 +1236,8 @@ a:hover{color:#0F4FCC}
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid #F1F4F9;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Termos e políticas</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
         <div onClick="{{ goto_support }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;cursor:pointer" style-hover="background:#F9FBFE"><div style="font:600 14px/1 Manrope;color:#101828">Ajuda</div><div style="width:8px;height:8px;border-right:2px solid #C3CBD9;border-top:2px solid #C3CBD9;transform:rotate(45deg)"></div></div>
       </div>
-      <div onClick="{{ goto_login }}" style="margin-top:12px;height:52px;border-radius:16px;background:#fff;border:1px solid #EBF0F8;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#D14343;cursor:pointer" style-hover="background:#FFF6F6">Sair</div>
-      <div style="margin-top:18px;text-align:center;font:500 11.5px/1.6 Manrope;color:#98A2B3">Pixaí · versão 1.0.0 (protótipo)<br>Pagamentos processados por instituição parceira autorizada.</div>
+      <div id="logout-submit" onClick="{{ doLogout }}" style="margin-top:12px;height:52px;border-radius:16px;background:#fff;border:1px solid #EBF0F8;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 Manrope;color:#D14343;cursor:pointer" style-hover="background:#FFF6F6">Sair</div>
+      <div style="margin-top:18px;text-align:center;font:500 11.5px/1.6 Manrope;color:#98A2B3">Pixaí · conta real (login/cadastro via Supabase)<br>Envio de Pix e cobrança no cartão são simulados — nenhum valor é movimentado de verdade.</div>
     </div>
   </div>
 </sc-if>
@@ -1259,11 +1265,9 @@ class Component extends DCLogic {
   RATES = {1:0.0399, 2:0.0529, 3:0.0659, 6:0.1082, 12:0.1898};
   INSTS = [1,2,3,6,12];
   REC = {name:'Mariana Alves da Silva', short:'Mariana Alves', first:'Mariana', ini:'MA', cpf:'***.456.789-**', bank:'Banco Exemplo S.A.', key:'mariana@email.com'};
-  CARDS = [
-    {id:'mc', brand:'Mastercard', last:'4821', holder:'Lucas Silva', limit:'R$ 7.420', main:true},
-    {id:'visa', brand:'Visa', last:'9132', holder:'Lucas Silva', limit:'R$ 3.180', main:false}
-  ];
   SCREENS = ['splash','ob','login','cadastro','otp','kyc','kycstatus','home','pixhub','pixkey','recipient','amount','payment','addcard','installments','review','auth','processing','success','receipt','history','txdetail','failauth','faillimit','failreview','failpix','refund','mycards','parcelas','limite','notif','security','support','profile','empty'];
+  // Telas acessíveis sem login. Qualquer outra tela exige uma sessão real (Supabase Auth).
+  PUBLIC_SCREENS = ['splash','ob','login','cadastro','otp','kyc','kycstatus'];
   NAV = [
     ['g','Entrada'],['splash','Splash'],['ob','Onboarding'],['login','Login'],['cadastro','Criar conta'],['otp','Código SMS'],['kyc','Verificação de identidade'],['kycstatus','Estados da verificação'],
     ['g','Fluxo Pix no cartão'],['home','Início'],['pixhub','Hub do Pix'],['pixkey','Chave Pix'],['recipient','Destinatário'],['amount','Valor'],['payment','Escolher cartão'],['addcard','Adicionar cartão'],['installments','Parcelamento'],['review','Revisão'],['auth','Autenticação'],['processing','Processando'],['success','Pix enviado'],['receipt','Comprovante'],
@@ -1272,10 +1276,38 @@ class Component extends DCLogic {
   ];
   TABS = [['home','Início',['home']],['pixhub','Pix',['pixhub','pixkey','recipient','amount','payment','installments','review']],['history','Transações',['history','txdetail','empty']],['mycards','Cartões',['mycards','parcelas']],['profile','Perfil',['profile','security','limite','notif','support']]];
   DARK = ['splash','auth','processing'];
+  CARD_GRADIENTS = [
+    'linear-gradient(140deg,#101828 0%,#223358 60%,#31456F 100%)',
+    'linear-gradient(140deg,#123A9E,#1769FF)'
+  ];
 
-  state = {screen:'splash', prev:[], ob:0, amount:'', desc:'', card:'mc', inst:6, kyc:1, otp:'', feeOpen:false, proc:0, filter:'Todas', terms:true, chat:0};
+  state = {
+    screen:'splash', prev:[], ob:0, amount:'', desc:'', card:null, inst:6, kyc:1, otp:'', feeOpen:false, proc:0, filter:'Todas', terms:true, chat:0,
+    // --- backend real (Supabase) ---
+    session:null, profile:null, cards:[], transactions:[], authBusy:false,
+    loginCpf:'', loginSenha:'', loginError:'',
+    cadNome:'', cadCpf:'', cadNasc:'', cadCelular:'', cadEmail:'', cadSenha:'', cadError:'',
+    addCardError:''
+  };
 
-  componentDidMount(){
+  // ---------------------------------------------------------------------
+  // Autenticação / dados reais (Supabase). O restante do app (Pix, cartão,
+  // KYC) continua simulado — ver README/ARCHITECTURE.md sobre por que isso
+  // exige parceiros regulados (Bacen/PCI-DSS) e não pode ser só código.
+  // ---------------------------------------------------------------------
+  digitsOnly(s){ return (s || '').replace(/\D/g, ''); }
+  cpfToEmail(cpf){ return 'cpf' + this.digitsOnly(cpf) + '@usuarios.pixai.app'; }
+
+  async componentDidMount(){
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data && data.session) {
+        await this.loadUserData(data.session);
+        this.setState({ session: data.session, screen: 'home', prev: [] });
+        return;
+      }
+    } catch (e) { /* backend fora do ar — segue como visitante */ }
+
     const start = this.props.startScreen;
     if(start && start!=='splash' && this.SCREENS.indexOf(start)>=0){ this.setState({screen:start, prev:[]}); return; }
     if(this.props.autoAdvance === false) return;
@@ -1285,20 +1317,157 @@ class Component extends DCLogic {
   componentDidUpdate(_, prev){
     if(this.state.screen==='processing' && prev.screen!=='processing') this.runProc();
   }
+
+  async loadUserData(session){
+    const uid = session.user.id;
+    let profile = null;
+    try {
+      const res = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+      profile = res.data;
+    } catch (e) { /* tabela ainda não existe? ver supabase/schema.sql */ }
+    if (!profile) {
+      const meta = session.user.user_metadata || {};
+      const row = { id: uid, nome: meta.nome || 'Cliente Pixaí', cpf: meta.cpf || '', celular: meta.celular || '', email_contato: meta.email_contato || '' };
+      try {
+        const created = await supabase.from('profiles').insert(row).select().maybeSingle();
+        profile = created.data || row;
+      } catch (e) { profile = row; }
+    }
+    let cards = [], txs = [];
+    try { cards = (await supabase.from('cards').select('*').eq('user_id', uid).order('created_at', {ascending:true})).data || []; } catch (e) {}
+    try { txs = (await supabase.from('transactions').select('*').eq('user_id', uid).order('created_at', {ascending:false})).data || []; } catch (e) {}
+    const mainCard = cards.find(c => c.is_main) || cards[0] || null;
+    this.setState({ profile, cards, transactions: txs, card: mainCard ? mainCard.id : null });
+  }
+
+  requiresAuth(s){ return this.PUBLIC_SCREENS.indexOf(s) === -1; }
+
+  async doLogin(){
+    const cpf = (document.getElementById('login-cpf') || {}).value || '';
+    const senha = (document.getElementById('login-senha') || {}).value || '';
+    if (this.digitsOnly(cpf).length !== 11) { this.setState({loginCpf:cpf, loginSenha:senha, loginError:'Digite um CPF válido (11 dígitos).'}); return; }
+    if (!senha) { this.setState({loginCpf:cpf, loginSenha:senha, loginError:'Digite sua senha.'}); return; }
+    this.setState({loginCpf:cpf, loginSenha:senha, loginError:'', authBusy:true});
+    let result;
+    try {
+      result = await supabase.auth.signInWithPassword({ email: this.cpfToEmail(cpf), password: senha });
+    } catch (e) {
+      this.setState({authBusy:false, loginError:'Não foi possível conectar ao backend. Confira config.js / README.'});
+      return;
+    }
+    if (result.error) { this.setState({authBusy:false, loginError:'CPF ou senha incorretos.'}); return; }
+    await this.loadUserData(result.data.session);
+    this.setState({authBusy:false, session:result.data.session, screen:'home', prev:[]});
+  }
+
+  async doSignup(){
+    const nome = (document.getElementById('cad-nome') || {}).value || '';
+    const cpf = (document.getElementById('cad-cpf') || {}).value || '';
+    const nasc = (document.getElementById('cad-nasc') || {}).value || '';
+    const celular = (document.getElementById('cad-celular') || {}).value || '';
+    const email = (document.getElementById('cad-email') || {}).value || '';
+    const senha = (document.getElementById('cad-senha') || {}).value || '';
+    const snap = {cadNome:nome, cadCpf:cpf, cadNasc:nasc, cadCelular:celular, cadEmail:email, cadSenha:senha};
+    if (!nome.trim()) { this.setState(Object.assign({}, snap, {cadError:'Digite seu nome completo.'})); return; }
+    if (this.digitsOnly(cpf).length !== 11) { this.setState(Object.assign({}, snap, {cadError:'Digite um CPF válido (11 dígitos).'})); return; }
+    if (senha.length < 6) { this.setState(Object.assign({}, snap, {cadError:'A senha precisa ter pelo menos 6 caracteres.'})); return; }
+    if (!this.state.terms) { this.setState(Object.assign({}, snap, {cadError:'É preciso aceitar os Termos de Uso para continuar.'})); return; }
+    this.setState(Object.assign({}, snap, {cadError:'', authBusy:true}));
+    let result;
+    try {
+      result = await supabase.auth.signUp({
+        email: this.cpfToEmail(cpf), password: senha,
+        options: { data: { nome, cpf: this.digitsOnly(cpf), celular, email_contato: email } }
+      });
+    } catch (e) {
+      this.setState({authBusy:false, cadError:'Não foi possível conectar ao backend. Confira config.js / README.'});
+      return;
+    }
+    if (result.error) {
+      const already = /already|registrad|existe/i.test(result.error.message || '');
+      this.setState({authBusy:false, cadError: already ? 'Este CPF já tem uma conta. Faça login.' : ('Não foi possível criar a conta: ' + result.error.message)});
+      return;
+    }
+    if (!result.data.session) {
+      this.setState({authBusy:false, cadError:'Conta criada, mas seu projeto Supabase exige confirmação por e-mail. Desative "Confirm email" em Authentication > Providers > Email (ver README) e faça login.'});
+      return;
+    }
+    try {
+      await supabase.from('profiles').upsert({ id: result.data.user.id, nome, cpf: this.digitsOnly(cpf), celular, email_contato: email });
+    } catch (e) { /* segue mesmo assim — loadUserData cria o perfil se faltar */ }
+    await this.loadUserData(result.data.session);
+    this.setState({authBusy:false, session:result.data.session, screen:'otp', prev:[...this.state.prev, 'cadastro']});
+  }
+
+  async doLogout(){
+    try { await supabase.auth.signOut(); } catch (e) {}
+    this.setState({session:null, profile:null, cards:[], transactions:[], card:null, screen:'login', prev:[]});
+  }
+
+  async doAddCard(){
+    if (!this.state.session) { this.jump('login'); return; }
+    const numero = (document.getElementById('card-numero') || {}).value || '';
+    const nomeImpresso = (document.getElementById('card-nome') || {}).value || '';
+    const nums = this.digitsOnly(numero);
+    if (nums.length < 12) { this.setState({addCardError:'Digite um número de cartão válido.'}); return; }
+    if (!nomeImpresso.trim()) { this.setState({addCardError:'Digite o nome impresso no cartão.'}); return; }
+    // Simulado: guardamos só bandeira + últimos 4 dígitos, nunca o número
+    // completo, validade ou CVV — como qualquer app real faria.
+    const brand = nums.charAt(0) === '4' ? 'Visa' : (nums.charAt(0) === '5' ? 'Mastercard' : 'Cartão');
+    const last4 = nums.slice(-4);
+    this.setState({addCardError:'', authBusy:true});
+    try {
+      const isMain = this.state.cards.length === 0;
+      const res = await supabase.from('cards').insert({
+        user_id: this.state.session.user.id, brand, last4, holder: nomeImpresso.toUpperCase(), is_main: isMain
+      }).select().maybeSingle();
+      if (res.error) throw res.error;
+      const cards = this.state.cards.concat([res.data]);
+      this.setState({authBusy:false, cards, card: this.state.card || res.data.id, screen:'payment'});
+    } catch (e) {
+      this.setState({authBusy:false, addCardError:'Não foi possível salvar o cartão agora.'});
+    }
+  }
+
+  async sendPix(){
+    // Registra a transação na conta real do usuário. Nenhum dinheiro se
+    // move de fato — Pix/cartão continuam simulados (ver README).
+    if (!this.state.session) return;
+    const st = this.state;
+    const cents = st.amount ? parseInt(st.amount,10) : 0;
+    const amt = cents > 0 ? cents/100 : 1000;
+    const rate = this.RATES[st.inst], total = amt*(1+rate), fee = total-amt;
+    const card = st.cards.find(c=>c.id===st.card);
+    try {
+      const res = await supabase.from('transactions').insert({
+        user_id: st.session.user.id, recipient_name: this.REC.name, recipient_key: this.REC.key,
+        amount: amt, installments: st.inst, fee: fee, total: total,
+        card_id: card ? card.id : null, status: 'Concluído'
+      }).select().maybeSingle();
+      if (res.data) this.setState({ transactions: [res.data].concat(st.transactions) });
+    } catch (e) { /* histórico é best-effort */ }
+  }
+
   runProc(){
     clearTimeout(this._p);
     this.setState({proc:0});
     const tick = (i)=>{
       this._p = setTimeout(()=>{
         if(this.state.screen!=='processing') return;
-        if(i>3){ this.go('success'); return; }
+        if(i>3){ this.sendPix(); this.go('success'); return; }
         this.setState({proc:i}); tick(i+1);
       }, 900);
     };
     tick(1);
   }
-  go(s){ this.setState(st=>({screen:s, prev:st.screen===s?st.prev:[...st.prev, st.screen], feeOpen:false}), ()=>{ if(s==='processing') this.runProc(); }); }
-  jump(s){ this.setState({screen:s, prev:[], feeOpen:false}, ()=>{ if(s==='processing') this.runProc(); }); }
+  go(s){
+    if (this.requiresAuth(s) && !this.state.session) { this.jump('login'); return; }
+    this.setState(st=>({screen:s, prev:st.screen===s?st.prev:[...st.prev, st.screen], feeOpen:false}), ()=>{ if(s==='processing') this.runProc(); });
+  }
+  jump(s){
+    if (this.requiresAuth(s) && !this.state.session) s = 'login';
+    this.setState({screen:s, prev:[], feeOpen:false}, ()=>{ if(s==='processing') this.runProc(); });
+  }
   back(){ this.setState(st=> st.prev.length ? {screen:st.prev[st.prev.length-1], prev:st.prev.slice(0,-1)} : st); }
   brl(n){ return 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
 
@@ -1368,22 +1537,80 @@ class Component extends DCLogic {
         headStyle:'font:800 16px/1.2 Manrope;color:'+(sel?'#1769FF':'#101828')};
     });
 
-    const cardsSel = this.CARDS.map(c => {
+    // Cartões e perfil vêm do Supabase (dados reais da conta), não de mock.
+    const cardsSel = st.cards.map(c => {
       const sel = st.card===c.id;
-      return {key:c.id, brand:c.brand.toUpperCase(), last:'•••• '+c.last, holder:c.holder, limit:c.limit, sel:sel,
+      return {key:c.id, brand:c.brand.toUpperCase(), last:'•••• '+c.last4, holder:c.holder, sel:sel, isMain: !!c.is_main,
         go:()=>this.setState({card:c.id}),
         style:'display:flex;align-items:center;gap:14px;padding:16px;border-radius:18px;background:#fff;cursor:pointer;border:'+(sel?'2px solid #1769FF':'1.5px solid #E6EBF3')+';box-shadow:'+(sel?'0 8px 20px rgba(23,105,255,.13)':'none'),
         dot:'width:22px;height:22px;border-radius:50%;flex:none;border:'+(sel?'7px solid #1769FF':'2px solid #CDD5E1')};
     });
     v.cardsSel = cardsSel;
-    const cc = this.CARDS.filter(c=>c.id===st.card)[0];
-    v.cardLabel = cc.brand + ' •••• ' + cc.last;
-    v.cardLast = '•••• ' + cc.last;
-    v.cardBrand = cc.brand;
+    v.noCards = st.cards.length === 0;
+    v.myCardsList = st.cards.map((c,i) => ({
+      key:c.id, last4:c.last4, holder:c.holder, brandUpper:c.brand.toUpperCase(), isMain: !!c.is_main,
+      cardStyle:'margin-top:12px;height:180px;border-radius:22px;background:'+this.CARD_GRADIENTS[i % this.CARD_GRADIENTS.length]+';padding:22px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 36px rgba(16,24,40,.22)'
+    }));
+    const cc = st.cards.filter(c=>c.id===st.card)[0];
+    v.cardLabel = cc ? (cc.brand + ' •••• ' + cc.last4) : 'Nenhum cartão cadastrado';
+    v.cardLast = cc ? ('•••• ' + cc.last4) : '';
+    v.cardBrand = cc ? cc.brand : '';
 
     v.rec = this.REC.name; v.recShort = this.REC.short; v.recFirst = this.REC.first;
     v.recLine = this.REC.first + ' receberá ' + this.brl(amt) + ' via Pix.';
     v.chargeLine = 'Seu cartão será cobrado em ' + this.brl(total) + '.';
+
+    // --- Auth / conta real ---
+    v.terms = st.terms;
+    v.toggleTerms = ()=>this.setState(s=>({terms:!s.terms}));
+    v.termsBoxStyle = 'width:22px;height:22px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;margin-top:1px;background:'+(st.terms?'#1769FF':'#fff')+';border:'+(st.terms?'none':'1.5px solid #C6D2E4');
+    v.doLogin = ()=>this.doLogin();
+    v.doSignup = ()=>this.doSignup();
+    v.doLogout = ()=>this.doLogout();
+    v.doAddCard = ()=>this.doAddCard();
+    v.loginCpf = st.loginCpf; v.loginSenha = st.loginSenha;
+    v.hasLoginError = !!st.loginError; v.loginError = st.loginError;
+    v.loginBtnLabel = st.authBusy ? 'Entrando…' : 'Entrar';
+    v.cadNome = st.cadNome; v.cadCpf = st.cadCpf; v.cadNasc = st.cadNasc; v.cadCelular = st.cadCelular; v.cadEmail = st.cadEmail; v.cadSenha = st.cadSenha;
+    v.hasCadError = !!st.cadError; v.cadError = st.cadError;
+    v.cadBtnLabel = st.authBusy ? 'Criando conta…' : 'Continuar';
+    v.hasAddCardError = !!st.addCardError; v.addCardError = st.addCardError;
+
+    const profile = st.profile || {};
+    v.profileNome = profile.nome || 'Cliente Pixaí';
+    v.profileFirst = v.profileNome.split(' ')[0];
+    v.profileIniciais = v.profileNome.split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('') || 'PX';
+    const cpfDigits = this.digitsOnly(profile.cpf || '');
+    v.profileCpfMasked = cpfDigits.length===11 ? ('***.' + cpfDigits.slice(3,6) + '.' + cpfDigits.slice(6,9) + '-**') : '—';
+    v.limiteDisponivel = this.brl(profile.saldo_limite != null ? Number(profile.saldo_limite) : 4850);
+
+    // Histórico real (uma lista com cabeçalhos de mês misturados aos itens,
+    // igual ao menu lateral faz com goto/grupo — evita precisar de sc-for
+    // aninhado dentro de sc-for).
+    const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    let lastMonthKey = null, flat = [];
+    st.transactions.forEach((t, i) => {
+      const d = new Date(t.created_at);
+      const monthKey = d.getFullYear() + '-' + d.getMonth();
+      if (monthKey !== lastMonthKey) {
+        lastMonthKey = monthKey;
+        flat.push({key:'g'+monthKey, isGroup:true, isItem:false, label: MESES[d.getMonth()].replace(/^./, c=>c.toUpperCase()) + ' ' + d.getFullYear()});
+      }
+      const amount = Number(t.amount) || 0;
+      flat.push({
+        key:t.id || i, isGroup:false, isItem:true,
+        ini: (t.recipient_name || '?').split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join(''),
+        name: t.recipient_name, pix: this.brl(amount),
+        pay: (t.installments>1 ? (t.installments+'x ') : '1x ') + this.brl(Number(t.total)/t.installments),
+        when: d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+        st: t.status || 'Concluído',
+        c: (t.status==='Concluído') ? '#0F9D63' : '#5A6579',
+        bg: (t.status==='Concluído') ? '#E7F7EF' : '#EFF2F7',
+        go: ()=>this.go('txdetail')
+      });
+    });
+    v.txFlat = flat;
+    v.txIsEmpty = st.transactions.length === 0;
 
     for(let d=0; d<10; d++){ const dd = String(d); v['k'+dd] = ()=>this.setState(s=>({amount:(s.amount+dd).replace(/^0+/,'').slice(0,9)})); }
     [0,1,2,3].forEach(i=>{
@@ -1407,17 +1634,6 @@ class Component extends DCLogic {
       go:()=>this.setState({filter:f}),
       style:'padding:8px 14px;border-radius:999px;white-space:nowrap;cursor:pointer;font:700 12.5px/1 Manrope;border:1px solid '+(st.filter===f?'#1769FF':'#E1E7F0')+';background:'+(st.filter===f?'#1769FF':'#fff')+';color:'+(st.filter===f?'#fff':'#5A6579')}));
 
-    v.txAug = [
-      {key:1, ini:'MA', name:'Mariana Alves', pix:'R$ 1.000,00', pay:'6x R$ 184,70', when:'31 ago · 22:18', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
-      {key:2, ini:'MC', name:'Mercado Central', pix:'R$ 127,90', pay:'1x R$ 133,00', when:'30 ago · 19:04', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
-      {key:3, ini:'CF', name:'Carlos Ferreira', pix:'R$ 850,00', pay:'3x R$ 302,00', when:'28 ago · 11:20', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
-      {key:4, ini:'AL', name:'Aluguel · Imob. Vila', pix:'R$ 2.800,00', pay:'12x R$ 277,60', when:'26 ago · 09:12', st:'Em análise', c:'#B25E09', bg:'#FDF3E4', go:()=>this.go('failreview')},
-      {key:5, ini:'JP', name:'João Pedro', pix:'R$ 540,20', pay:'2x R$ 284,30', when:'22 ago · 17:45', st:'Estornado', c:'#5A6579', bg:'#EFF2F7', go:()=>this.go('refund')}
-    ];
-    v.txJul = [
-      {key:6, ini:'RS', name:'Renata Souza', pix:'R$ 320,00', pay:'1x R$ 332,80', when:'28 jul · 14:02', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')},
-      {key:7, ini:'PA', name:'Padaria Aurora', pix:'R$ 78,50', pay:'1x R$ 81,63', when:'19 jul · 08:31', st:'Concluído', c:'#0F9D63', bg:'#E7F7EF', go:()=>this.go('txdetail')}
-    ];
     v.freq = ['Mariana','João','Aluguel','Carlos','Mercado'].map((f,i)=>({key:f, name:f, ini:f.slice(0,2).toUpperCase(), go:()=>this.go('amount')}));
     return v;
   }

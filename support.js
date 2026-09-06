@@ -172,9 +172,34 @@
       /* no props declared — fine, use defaults from the component itself */
     }
 
+    // Real backend (Supabase): auth + Postgres. See config.js / README.
+    const cfg = window.PIXAI_CONFIG || {};
+    const configured = cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY
+      && cfg.SUPABASE_URL.indexOf('COLE_AQUI') === -1
+      && cfg.SUPABASE_ANON_KEY.indexOf('COLE_AQUI') === -1;
+    if (!configured) {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#101828;color:#fff;'
+        + 'font:600 15px/1.6 Manrope,sans-serif;display:flex;align-items:center;justify-content:center;'
+        + 'text-align:center;padding:40px';
+      warn.innerHTML = '<div style="max-width:480px">'
+        + '<div style="font:800 20px/1.3 Manrope,sans-serif;margin-bottom:14px">Backend não configurado</div>'
+        + 'Edite <code>config.js</code> com a URL e a chave "anon public" do seu projeto Supabase '
+        + '(depois de rodar <code>supabase/schema.sql</code>) para o login e cadastro funcionarem de verdade. '
+        + 'Veja o README.'
+        + '</div>';
+      document.body.appendChild(warn);
+      return;
+    }
+    const supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
     // The component class body is plain JS inside a non-executing
-    // <script type="text/x-dc">; evaluate it ourselves with DCLogic in scope.
-    const ComponentClass = new Function('DCLogic', scriptEl.textContent + '\nreturn Component;')(DCLogic);
+    // <script type="text/x-dc">; evaluate it ourselves with DCLogic and the
+    // Supabase client in scope.
+    const ComponentClass = new Function(
+      'DCLogic', 'supabase',
+      scriptEl.textContent + '\nreturn Component;'
+    )(DCLogic, supabaseClient);
     const instance = new ComponentClass(props);
 
     function render() {
