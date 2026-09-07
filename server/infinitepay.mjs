@@ -15,7 +15,8 @@ export async function infiniteRequest(path, body) {
         signal:AbortSignal.timeout(12000),
       });
       if(response.ok) return await response.json();
-      failures.push(`${new URL(origin).hostname}:HTTP_${response.status}`);
+      const detail=await response.text().catch(()=>'');
+      failures.push(`${new URL(origin).hostname}:HTTP_${response.status}${detail?':'+detail.slice(0,300):''}`);
     } catch(error) {
       failures.push(`${new URL(origin).hostname}:${error?.name||'FETCH_ERROR'}`);
     }

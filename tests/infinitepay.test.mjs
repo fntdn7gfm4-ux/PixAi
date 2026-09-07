@@ -66,6 +66,24 @@ test('fluxo de serviços limita valores e cria checkout pelo valor exato',async(
   } finally {globalThis.fetch=oldFetch;}
 });
 
+test('descrição enviada à InfinitePay nunca passa de 128 caracteres (limite da API)',async()=>{
+  const h=setup(),c=h.client();
+  const initial=await c('infinitepay/admin/config',{admin:true});
+  const longDescription='Após a confirmação do pagamento, o valor é enviado via Pix em até 5 minutos, sujeito às validações de segurança da transação.';
+  assert.ok(('PIX R$20 — '+longDescription).length>128,'a descrição de teste precisa realmente estourar o limite');
+  const value={...initial.data.value,products:[{id:'produto-longo',name:'PIX R$20',description:longDescription,price:2000,active:true,customPrice:false}]};
+  const saved=await c('infinitepay/admin/config',{method:'PUT',admin:true,headers:{origin:'https://pixai.test'},body:{revision:initial.data.revision,value}});
+  assert.equal(saved.status,200);
+  let payload;
+  const oldFetch=globalThis.fetch;
+  globalThis.fetch=async(_url,options)=>{payload=JSON.parse(options.body);return new Response(JSON.stringify({url:'https://checkout.infinitepay.com.br/lucas-banza?lenc=teste'}),{status:200});};
+  try {
+    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:2000,totalCharge:3077,productId:'produto-longo',name:'Cliente Teste',email:'cliente@example.com',cpf:'52998224725',phone:'11987654321',confirmed:true}});
+    assert.equal(created.status,201);
+    assert.ok(payload.items[0].description.length<=128,`descrição enviada tem ${payload.items[0].description.length} caracteres`);
+  } finally {globalThis.fetch=oldFetch;}
+});
+
 test('celular é exigido por padrão e pode ser desativado pelo painel',async()=>{
   const h=setup(),c=h.client();
   const base={amount:5000,totalCharge:7693,productId:'opcao-2',name:'Cliente Sem Dados',email:'semdados@example.com',cpf:'52998224725',confirmed:true};

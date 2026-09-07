@@ -256,7 +256,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
           redirect_url:env.PUBLIC_BASE_URL+'/infinitepay-return.html#'+encodeURIComponent(id)+'/'+access,
           webhook_url:env.PUBLIC_BASE_URL+'/api/infinitepay/webhook',
           customer,
-          items:[{quantity:1,price:totalCharge,description:`${quote.productName} — ${quote.serviceDescription}`}],
+          items:[{quantity:1,price:totalCharge,description:`${quote.productName} — ${quote.serviceDescription}`.slice(0,128)}],
         };
         const result=await infiniteRequest('/links',linksPayload);
         const url=checkoutUrl(result.url);
