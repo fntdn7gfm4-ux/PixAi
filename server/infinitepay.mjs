@@ -19,5 +19,5 @@ export function verifiedPayment(result, total) {
   return result?.success===true && result.paid===true && result.amount===total &&
     Number.isSafeInteger(result.paid_amount) && result.paid_amount>=total &&
     Number.isInteger(result.installments) && result.installments>=1 && result.installments<=12 &&
-    result.capture_method==='credit_card';
+    ['credit_card','pix'].includes(result.capture_method);
 }
