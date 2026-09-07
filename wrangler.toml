@@ -1,0 +1,17 @@
+name = "pixai-platform"
+main = "server/worker.mjs"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pixai"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+migrations_dir = "drizzle"
+
+[observability]
+enabled = true

@@ -17,5 +17,5 @@ const hosting = JSON.parse(
 await writeFile("dist/.openai/hosting.json", JSON.stringify(hosting, null, 2));
 await cp("drizzle", "dist/.openai/drizzle", { recursive: true });
 console.log(
-  "Build concluído: frontend + API + migrações. Pagamentos reais bloqueados.",
+  "Build concluído: frontend + API + migrações. Consulte LAUNCH.md antes da ativação financeira.",
 );

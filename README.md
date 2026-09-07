@@ -1,5 +1,7 @@
 # PixAI / Pixaí — plataforma de avaliação
 
+**Preparação Asaas:** adaptador, conciliação, controle de capital próprio e painel operacional adicionados. Credenciais de produção configuradas somente no servidor; novas cobranças continuam desativadas. Leia [LAUNCH.md](LAUNCH.md) para o estado atual, decisões de capital (R$ 1.000, reserva zero), margem sobre receita e pendências de lançamento. A descrição da demonstração abaixo refere-se ao fluxo sandbox, que continua disponível.
+
 Nova experiência web para Pix pago no cartão, sem conta ou senha tradicional.
 
 **Teste online:** https://pixai-teste.offlucas.chatgpt.site/

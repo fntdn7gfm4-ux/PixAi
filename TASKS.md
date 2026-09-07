@@ -1,5 +1,7 @@
 # Estado da entrega e caminho para produção
 
+Atualização Asaas: [LAUNCH.md](LAUNCH.md) detalha a integração implementada e as pendências ainda necessárias. O checklist abaixo é o histórico da primeira demonstração, não uma afirmação de que a integração Asaas esteja homologada.
+
 ## Concluído
 
 - [x] Substituir runtime legado e cadastro com senha pela jornada web de teste sem conta.

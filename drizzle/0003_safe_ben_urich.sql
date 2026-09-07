@@ -1,0 +1,1 @@
+ALTER TABLE `real_operations` ADD `funding_exposure` integer DEFAULT 0 NOT NULL;

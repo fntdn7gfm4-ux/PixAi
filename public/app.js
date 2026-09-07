@@ -43,6 +43,10 @@ const state = {
   dashboard: null,
   allOptions: false,
   idempotency: null,
+  realQuote: null,
+  realSelected: null,
+  realIdempotency: null,
+  realStatus: null,
 };
 let errorTimer;
 function notice(message) {
@@ -181,20 +185,10 @@ function pricingAdmin() {
     )}<div><label for="enabled-installments">Parcelas disponíveis</label><input id="enabled-installments" name="installments" value="${s.installments.join(",")}" required><p class="field-help">Separe por vírgulas. Ex.: 1,3,6,9,12</p></div>${numField("maxOperationsPerSession", "Máximo de operações de teste / sessão / dia", s.maxOperationsPerSession, "1")}</div><hr class="section-divider"><h3>Ofertas da Home</h3><p class="field-help">O preço definido é um piso. O servidor aumenta a parcela se necessário para preservar a margem.</p>${s.offers.map((o, i) => `<div class="form-grid review-box">${numField(`offer-${i}-amount`, "Receba no Pix (R$)", o.pixAmount / 100)}${numField(`offer-${i}-count`, "Quantidade de parcelas", o.installments, "1")}${numField(`offer-${i}-floor`, "Parcela de referência (R$)", o.installmentFloor / 100)}<label class="check-label"><input name="offer-${i}-featured" type="checkbox" ${o.featured ? "checked" : ""}>Destacar oferta</label></div>`).join("")}<div class="notice warning">Taxas e custos zerados são apenas referências iniciais, não confirmação de isenção. A produção dependerá de taxas oficiais, tributos e condições validadas.</div><button class="btn" type="submit">Salvar e recalcular ofertas →</button></form></section>`;
 }
 function integrations() {
-  return `<section class="panel"><h2>Conectar os parceiros.</h2><p>Configuração técnica preparada. Cobrança, Pix, KYC, e-mail e 3DS ainda não estão integrados.</p><div class="integration-list">${[
-    ["Cartão e tokenização", "PSP_SANDBOX_API_KEY / PSP_PRODUCTION_API_KEY"],
-    ["Pix e conciliação", "Adaptador oficial do parceiro de cash-out"],
-    ["Webhooks assinados", "PSP_WEBHOOK_SECRET + formato oficial do parceiro"],
-    ["Identidade e antifraude", "KYC_PROVIDER_API_KEY"],
-    ["Comprovante e OTP por e-mail", "EMAIL_PROVIDER_API_KEY / EMAIL_FROM"],
-  ]
-    .map(
-      ([name, key]) =>
-        `<div class="review-box integration-row"><div><strong>${name}</strong><p>${key}</p></div><span class="badge">NÃO CONFIGURADO</span></div>`,
-    )
-    .join(
-      "",
-    )}</div><div class="notice warning">Não basta inserir uma chave. A operação cartão → Pix deve estar autorizada pelo parceiro e o adaptador precisa ser implementado e homologado. Não há botão para ativar produção prematuramente.</div><h3>Opções para avaliação comercial</h3><p><a href="https://developers.celcoin.com.br/docs/pagar-e-transferir-com-pix-cashout" target="_blank" rel="noopener">Celcoin — Pix cash-out</a> · <a href="https://docs.zoop.com.br/" target="_blank" rel="noopener">Zoop — pagamentos e banking</a> · <a href="https://docs.pagar.me/reference/vis%C3%A3o-geral-sobre-pagamento" target="_blank" rel="noopener">Pagar.me — processamento de cartão</a></p><p class="field-help">A documentação de cada produto não confirma permissão para este modelo de negócio. É necessária aprovação comercial específica.</p></section>`;
+  const checks=state.readiness?.checks || {};
+  const labels={provider:'Ambiente Asaas',apiKey:'Credencial do servidor',webhookToken:'Token de eventos',withdrawalToken:'Token de autorização de saque',encryption:'Criptografia',origin:'Endereço de retorno',enabled:'Ativação de pagamentos',productionMode:'Ambiente de produção',commercialApproval:'Aprovação do modelo pelo Asaas',homologation:'Relatório de homologação',identityControls:'Processo de identificação e antifraude',operator:'Identificação da empresa',support:'Canal de suporte',pricing:'Revisão de tarifas e tributos',funding:'Revisão do capital próprio',fundingMode:'Modelo de liquidação',exposureLimit:'Limite de capital comprometido',reserve:'Reserva de saldo',sandboxMode:'Ambiente de homologação'};
+  const operations=state.realOperations?.operations || [];
+  return '<section class="panel"><h2>Asaas · preparação do lançamento</h2><p>O painel mostra a configuração disponível. Marcas de configuração não substituem os testes e a análise dos documentos de aprovação.</p><div class="integration-list">'+Object.entries(checks).map(([k,v])=>'<div class="review-box integration-row"><strong>'+esc(labels[k]||k)+'</strong><span class="badge">'+(v?'CONFIGURADO':'PENDENTE')+'</span></div>').join('')+'</div><p>Eventos aguardando conciliação: '+(state.realOperations?.pendingEvents||0)+'</p><button class="btn secondary" data-action="asaas-refresh">Atualizar</button> <button class="btn secondary" data-action="asaas-replay">Reprocessar eventos pendentes</button><h3>Operações Asaas</h3>'+operations.map(o=>'<article class="review-box"><strong>'+esc(o.id)+'</strong><p>'+esc(realStatusLabel[o.status]||o.status)+' · Pix '+money(o.quote.pixAmount)+' · Cartão '+money(o.quote.totalCharge)+'</p><button class="btn secondary" data-action="asaas-reconcile" data-id="'+esc(o.id)+'">Conciliar com o Asaas</button>'+(['FUNDS_AVAILABLE','PAYMENT_APPROVED'].includes(o.status)?'<form class="release-form"><input type="hidden" name="id" value="'+esc(o.id)+'"><label>Referência da revisão de identidade e antifraude<input name="reference" required minlength="10" maxlength="200" placeholder="Identificador do relatório verificado"></label><label class="check-label"><input type="checkbox" required><span>Conferi a identidade do pagador e a operação '+esc(o.id)+'. Autorizo solicitar Pix de '+money(o.quote.pixAmount)+' com o saldo da conta Asaas.</span></label><button class="btn" type="submit">Autorizar solicitação de Pix</button></form>':'')+'</article>').join('')+(operations.length?'':'<p>Nenhuma operação Asaas registrada.</p>')+'</section>';
 }
 function admin() {
   if (!state.adminToken || !state.dashboard || !state.settings)
@@ -215,11 +209,78 @@ function admin() {
 function legal(type) {
   return `<article class="panel legal centered"><a class="back" href="#home">← Início</a><div class="eyebrow">AMBIENTE DE AVALIAÇÃO</div><h1>${type === "privacy" ? "Privacidade no teste." : "Termos da demonstração."}</h1>${type === "privacy" ? `<p>Esta versão usa uma identidade fictícia e não solicita nome real, CPF, chave Pix ou dados de cartão. Não insira informações pessoais neste ambiente.</p><h2>O que o teste armazena</h2><p>Cotações, operações simuladas, estados, registros de auditoria e um identificador aleatório de sessão. Um cookie HttpOnly mantém a sessão por até 24 horas. Um hash do endereço IP é usado para limitar tentativas; não é usado para publicidade.</p><h2>Consulta e acesso</h2><p>A consulta de demonstração só permite acessar operações da mesma sessão após validar o código de teste. Administradores autorizados podem consultar os registros simulados.</p><h2>Antes de aceitar dados reais</h2><p>O responsável pela operação, canal de privacidade, bases legais, prazos de retenção, parceiros e atendimento aos direitos do titular precisam ser definidos. Este aviso não substitui a política de privacidade da futura operação financeira.</p>` : `<p>O Pixaí está em avaliação. Não há cobrança, transferência Pix, concessão de crédito, validação KYC real ou instituição de pagamento conectada.</p><h2>Preços de referência</h2><p>As ofertas são calculadas no servidor. Os valores incluem custos de referência e margem comercial. O custo efetivo, tributos, regras do cartão e CET aplicável serão determinados com o parceiro autorizado antes de qualquer operação real.</p><h2>Resultados simulados</h2><p>Os cenários de aprovação, recusa, análise e falha no Pix são fictícios e servem apenas para avaliar a experiência. Os comprovantes são identificados como teste e não comprovam movimentação de dinheiro.</p><h2>Sem e-mails reais</h2><p>O código mostrado na consulta é um recurso de demonstração. Nenhuma mensagem é enviada. Não há acesso a transações reais por esta página.</p>`}</article>`;
 }
-function render() {
-  const route = location.hash.slice(1) || "home";
+const realStatusLabel = {
+  CHECKOUT_CREATING: "Preparando checkout",
+  CHECKOUT_UNCERTAIN: "Checkout em conciliação — não repita o pagamento",
+  AWAITING_FUNDS: "Pagamento registrado; aguardando liquidação",
+  FUNDS_AVAILABLE: "Saldo recebido; aguardando revisão de identidade",
+  PIX_SUBMITTING: "Solicitando transferência",
+  PIX_UNCERTAIN: "Transferência em conciliação — não repita o envio",
+  PAYMENT_DISPUTED: "Pagamento em contestação ou estorno",
+  AWAITING_PAYMENT: "Aguardando confirmação do pagamento…",
+  PAYMENT_APPROVED: "Pagamento aprovado. Enviando o Pix…",
+  PIX_PROCESSING: "Pix em processamento…",
+  COMPLETED: "Pix enviado com sucesso.",
+  PAYMENT_FAILED: "Pagamento não aprovado.",
+  PIX_FAILED: "Não foi possível enviar o Pix. Nossa equipe foi notificada.",
+};
+function realHome() {
+  if(!state.bootstrap?.paymentsEnabled) return `<section class="panel lookup"><div class="eyebrow">INTEGRAÇÃO ASAAS</div><h1>Pagamentos em preparação.</h1><p>A liberação depende da homologação e das condições de recebimento do cartão. Nenhum pagamento real está disponível neste momento.</p><a class="btn" href="#home">Experimentar a demonstração</a></section>`;
+  return `<section class="intro"><div><div class="eyebrow"><span class="status-dot"></span> PAGAMENTO REAL</div><h1>Receba no Pix<br>pagando no cartão.</h1><p>Dinheiro de verdade, processado pelo Asaas. A chave Pix precisa ser do mesmo CPF de quem paga.</p></div></section>
+ <div class="custom-card"><span class="icon-box" aria-hidden="true">＋</span><div><h3>Quanto você quer receber?</h3><p>Informe o valor do Pix.</p></div><form id="real-amount-form"><label class="money-field"><span aria-hidden="true">R$</span><input name="amount" inputmode="decimal" placeholder="180,00" required autocomplete="off" aria-label="Quanto você quer receber?" maxlength="12"></label><button class="btn" type="submit">Ver parcelas <span aria-hidden="true">→</span></button></form></div>
+ <p class="fine-print">O Pix só é enviado depois que o Asaas confirma o pagamento do cartão, e apenas para uma chave Pix cujo titular seja o mesmo CPF informado nesta página.</p>`;
+}
+function realConfirmView() {
+  const q = state.realQuote;
+  const selected =
+    state.realSelected || q.options.find((o) => o.recommended) || q.options[0];
+  const shown = q.options.filter((o) =>
+    [1, 3, 6, 12, selected.installments].includes(o.installments),
+  );
+  return `<a class="back" href="#real">← Alterar valor</a><div class="checkout-layout"><section class="panel"><h2>Confirme os dados.</h2><p>Você recebe ${money(selected.pixAmount)} no Pix.</p><div class="options">${shown
+    .map(
+      (o) =>
+        `<label class="option ${selected.installments === o.installments ? "selected" : ""}"><input type="radio" name="real-installments" value="${o.installments}" ${selected.installments === o.installments ? "checked" : ""}><span class="option-main"><strong>${installmentMarkup(o)}</strong></span><span class="option-total">${money(o.totalCharge)}<br><small>no total</small></span></label>`,
+    )
+    .join(
+      "",
+    )}</div><form id="real-confirm-form"><div class="form-grid"><div class="wide"><label for="real-name">Nome completo</label><input id="real-name" name="name" required maxlength="140" autocomplete="name"></div><div><label for="real-email">E-mail</label><input id="real-email" name="email" type="email" required autocomplete="email"></div><div><label for="real-cpf">CPF</label><input id="real-cpf" name="cpf" required inputmode="numeric" placeholder="000.000.000-00" autocomplete="off"></div><div><label for="real-pix-type">Tipo de chave Pix</label><select id="real-pix-type" name="pixKeyType"><option value="CPF">CPF</option></select></div><div class="wide"><label for="real-pix-key">Chave Pix</label><input id="real-pix-key" name="pixKey" required autocomplete="off"><p class="field-help">A chave precisa pertencer ao mesmo CPF informado acima. A consulta da chave não substitui a verificação da identidade do pagador.</p></div></div><div class="notice warning">Você será redirecionado ao checkout seguro do Asaas para pagar no cartão. Nenhum dado de cartão passa por este site. O checkout permite até o número de parcelas escolhido; o total desta cotação permanece o mesmo.</div><label class="check-label"><input name="consent" type="checkbox" required><span>Conferi os valores, aceito o total exibido e entendo que o Pix depende da liquidação do cartão e da revisão de identidade, sem garantia de envio imediato.</span></label><button class="btn full" type="submit">Pagar e receber Pix →</button></form></section></div>`;
+}
+function realResultView() {
+  const s = state.realStatus;
+  if (!s)
+    return `<section class="panel centered"><h1>Consultando sua operação…</h1><p>Aguarde um instante.</p></section>`;
+  return `<div class="centered"><a class="back" href="#real">← Nova operação</a><section class="panel"><div class="eyebrow">STATUS DA OPERAÇÃO</div><h1>${realStatusLabel[s.status] || s.status}</h1><div class="receipt-id">${esc(s.id)}</div><div class="row"><span>Você recebe no Pix</span><strong>${money(s.quote.pixAmount)}</strong></div><div class="row"><span>Total no cartão</span><strong>${money(s.quote.totalCharge)}</strong></div><p class="field-help">O retorno do checkout não confirma o pagamento por si só; esta página consulta o status real a cada poucos segundos.</p></section></div>`;
+}
+let realPollTimer;
+async function pollRealStatus(id) {
+  clearTimeout(realPollTimer);
+  try {
+    state.realStatus = await api(`real/status/${id}`);
+  } catch (e) {
+    notice(e.message);
+    return;
+  }
+  if (location.hash.slice(1).split("?")[0] !== "real-result") return;
+  render(false);
+  if (!["COMPLETED", "PAYMENT_FAILED", "PIX_FAILED", "PAYMENT_DISPUTED", "PIX_UNCERTAIN", "CHECKOUT_UNCERTAIN"].includes(state.realStatus.status))
+    realPollTimer = setTimeout(() => pollRealStatus(id), 4000);
+}
+function render(startPolling = true) {
+  const [route, queryString] = (location.hash.slice(1) || "home").split("?");
+  const params = new URLSearchParams(queryString || "");
+  if(state.bootstrap?.environment === "production" && ["home","installments","identify","payment","review","lookup"].includes(route)) return navigate("real");
   const needsQuote = ["installments", "identify", "payment", "review"];
   if (needsQuote.includes(route) && !state.selected) return navigate("home");
   if (route === "result" && !state.receipt) return navigate("lookup");
+  if (route === "real-confirm" && !state.realQuote) return navigate("real");
+  const sandboxRoutes = ["home", "installments", "identify", "payment", "review", "result", "lookup"];
+  if (!state.bootstrap && sandboxRoutes.includes(route)) {
+    main.innerHTML =
+      '<section class="panel centered"><h1>O ambiente de teste não está disponível.</h1><p>Não foi possível confirmar o estado do serviço. Aguarde e recarregue a página.</p><a class="btn" href="/">Tentar novamente</a></section>';
+    main.focus({ preventScroll: true });
+    return;
+  }
   const views = {
     home,
     installments,
@@ -229,12 +290,21 @@ function render() {
     result,
     lookup,
     admin,
+    real: realHome,
+    "real-confirm": realConfirmView,
+    "real-result": realResultView,
     privacy: () => legal("privacy"),
     terms: () => legal("terms"),
   };
   main.innerHTML = (views[route] || home)();
   main.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: "instant" });
+  if (route === "real-result") {
+    const op = params.get("op");
+    if (op && startPolling) pollRealStatus(op);
+  } else {
+    clearTimeout(realPollTimer);
+  }
 }
 async function getQuote(amount, n) {
   const q = await api("quotes", {
@@ -264,6 +334,11 @@ async function loadAdmin() {
   ]);
   state.dashboard = d;
   state.settings = s;
+  await loadAsaasAdmin();
+}
+async function loadAsaasAdmin() {
+  const [r,o]=await Promise.all([api('real/admin/readiness',{admin:true}),api('real/admin/operations',{admin:true})]);
+  state.readiness=r;state.realOperations=o;
 }
 document.addEventListener("click", async (event) => {
   const b = event.target.closest("[data-action]");
@@ -271,6 +346,9 @@ document.addEventListener("click", async (event) => {
   const action = b.dataset.action;
   b.disabled = true;
   try {
+    if(action==='asaas-refresh') { await loadAsaasAdmin();render(); }
+    if(action==='asaas-replay') { const r=await api('real/admin/replay',{method:'POST',admin:true,body:{}});await loadAsaasAdmin();render();notice(r.processed+' eventos conciliados.'); }
+    if(action==='asaas-reconcile') { await api('real/admin/reconcile',{method:'POST',admin:true,body:{id:b.dataset.id}});await loadAsaasAdmin();render(); }
     if (action === "offer")
       await getQuote(Number(b.dataset.amount), Number(b.dataset.installments));
     else if (action === "all-options") {
@@ -325,6 +403,12 @@ document.addEventListener("change", (event) => {
     )?.focus({ preventScroll: true });
   }
   if (event.target.name === "scenario") state.scenario = event.target.value;
+  if (event.target.name === "real-installments") {
+    state.realSelected = state.realQuote.options.find(
+      (q) => q.installments === Number(event.target.value),
+    );
+    render();
+  }
 });
 document.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -336,8 +420,43 @@ document.addEventListener("submit", async (event) => {
   button.textContent = "Aguarde…";
   const data = new FormData(form);
   try {
+    if(form.classList.contains('release-form')) {
+      const op=state.realOperations.operations.find(o=>o.id===data.get('id'));
+      await api('real/admin/release',{method:'POST',admin:true,body:{id:op.id,pixAmount:op.quote.pixAmount,reviewReference:data.get('reference'),confirmed:true}});
+      await loadAsaasAdmin();render();notice('Solicitação registrada. Aguarde a confirmação do Asaas.');
+    }
     if (form.id === "custom-form")
       await getQuote(parseAmount(data.get("amount")));
+    if (form.id === "real-amount-form") {
+      state.realQuote = await api("real/quotes", {
+        method: "POST",
+        body: { pixAmount: parseAmount(data.get("amount")) },
+      });
+      state.realSelected =
+        state.realQuote.options.find((o) => o.recommended) ||
+        state.realQuote.options[0];
+      state.realIdempotency = crypto.randomUUID();
+      navigate("real-confirm");
+    }
+    if (form.id === "real-confirm-form") {
+      const result = await api("real/confirm", {
+        method: "POST",
+        key: state.realIdempotency,
+        body: {
+          quoteId: state.realQuote.id,
+          installments: state.realSelected.installments,
+          name: data.get("name"),
+          email: data.get("email"),
+          cpf: data.get("cpf"),
+          pixKeyType: data.get("pixKeyType"),
+          pixKey: data.get("pixKey"),
+          confirmed: true,
+          termsVersion: "real-v1",
+        },
+      });
+      if (result.checkoutUrl) location.href = result.checkoutUrl;
+      else navigate(`real-result?op=${encodeURIComponent(result.id)}`);
+    }
     if (form.id === "identity-form") navigate("payment");
     if (form.id === "confirm-form") {
       state.receipt = await api("sandbox/confirm", {
@@ -427,14 +546,14 @@ document.addEventListener("submit", async (event) => {
     button.textContent = old;
   }
 });
-window.addEventListener("hashchange", () => {
-  if (state.bootstrap) render();
-});
+window.addEventListener("hashchange", render);
 try {
   state.bootstrap = await api("bootstrap");
-  render();
 } catch (e) {
-  main.innerHTML =
-    '<section class="panel centered"><h1>Estamos preparando o ambiente.</h1><p>A conexão com o servidor não está disponível. Tente recarregar em instantes.</p><a class="btn" href="./">Tentar novamente</a></section>';
   notice(e.message);
+  const bar = $("#env-bar");
+  if (bar)
+    bar.innerHTML =
+      '<span class="status-dot"></span><strong>SERVIÇO INDISPONÍVEL</strong><span>Não foi possível verificar o ambiente. Pagamentos não estão disponíveis.</span>';
 }
+render();
