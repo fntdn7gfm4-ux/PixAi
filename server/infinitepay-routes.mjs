@@ -9,10 +9,6 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
   const integerEnv=(env,key,fallback)=>/^\d+$/.test(env[key]||'')?Number(env[key]):fallback;
   const onlyDigits=value=>String(value||'').replace(/\D/g,'');
   const isValidPhone=value=>{const d=onlyDigits(value);return d.length===10||d.length===11;};
-  const isValidAddress=value=>value&&typeof value==='object'&&!Array.isArray(value)&&
-    onlyDigits(value.cep).length===8&&text(value.street,3,140)&&text(value.neighborhood,2,100)&&text(value.number,1,20)&&
-    (value.complement===undefined||value.complement===''||text(value.complement,1,100));
-  const normalizedAddress=value=>({cep:onlyDigits(value.cep),street:value.street.trim(),neighborhood:value.neighborhood.trim(),number:value.number.trim(),complement:(value.complement||'').trim()});
   const ppm=1000000;
   const ceilDiv=(a,b)=>Math.ceil(a/b);
   // Grosses up a base (net) amount so that, after subtracting an estimated
@@ -62,7 +58,6 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       minAmount:Number.isSafeInteger(saved.minAmount)?saved.minAmount:integerEnv(env,'INFINITEPAY_MIN_AMOUNT_CENTS',2000),
       maxAmount:Number.isSafeInteger(saved.maxAmount)?saved.maxAmount:integerEnv(env,'INFINITEPAY_MAX_AMOUNT_CENTS',25000),
       collectPhone:saved.collectPhone??true,
-      collectAddress:saved.collectAddress??true,
       gatewayRatePpm:Number.isSafeInteger(saved.gatewayRatePpm)?saved.gatewayRatePpm:integerEnv(env,'INFINITEPAY_GATEWAY_RATE_PPM',155000),
       minMarginPpm:Number.isSafeInteger(saved.minMarginPpm)?saved.minMarginPpm:integerEnv(env,'INFINITEPAY_MIN_MARGIN_PPM',300000),
       content,
@@ -108,7 +103,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         try {return {...product,displayPrice:grossUp(product.price,current.value.gatewayRatePpm,current.value.minMarginPpm).totalCharge};}
         catch {return product;}
       });
-      return json({provider:'infinitepay',paymentsEnabled:enabled,minAmount:current.value.minAmount,maxAmount:current.value.maxAmount,serviceLabel:current.value.serviceLabel,collectPhone:current.value.collectPhone,collectAddress:current.value.collectAddress,content:current.value.content,products});
+      return json({provider:'infinitepay',paymentsEnabled:enabled,minAmount:current.value.minAmount,maxAmount:current.value.maxAmount,serviceLabel:current.value.serviceLabel,collectPhone:current.value.collectPhone,content:current.value.content,products});
     }
     if(path==='/api/infinitepay/webhook'&&request.method==='POST') {
       const body=await readBody(request);
@@ -133,7 +128,6 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       if(!row||token.length<32||!await constantEqual(await sha256(token),row.access_digest)) fail(404,'Pagamento não encontrado.');
       return json(await check(db,row,body));
     }
-
     const isAdmin=path.startsWith('/api/infinitepay/admin/');
     if(!isAdmin&&!['/api/infinitepay/quote','/api/infinitepay/create','/api/infinitepay/confirm'].includes(path)) fail(404,'Recurso não encontrado.');
     if(isAdmin) {
@@ -146,12 +140,12 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     if(path.endsWith('/config')) {
       if(request.method==='GET') return json({...await config(db,env),serverEnabled:env.INFINITEPAY_ENABLED==='true'});
       if(request.method==='PUT') {
-        const body=await readBody(request);only(body,['value','revision']);
+        const body=await readBody(request,700000);only(body,['value','revision']);
         if(!body.value||typeof body.value!=='object') fail(400,'Configuração inválida.');
-        only(body.value,['handle','serviceLabel','enabled','minAmount','maxAmount','collectPhone','collectAddress','gatewayRatePpm','minMarginPpm','content','products']);
+        only(body.value,['handle','serviceLabel','enabled','minAmount','maxAmount','collectPhone','gatewayRatePpm','minMarginPpm','content','products']);
         const value=body.value;
         if(typeof value.handle!=='string'||(value.handle&&!/^[A-Za-z0-9_.-]{1,80}$/.test(value.handle))||typeof value.enabled!=='boolean') fail(400,'Informe uma InfiniteTag válida, sem $.');
-        if(typeof value.collectPhone!=='boolean'||typeof value.collectAddress!=='boolean') fail(400,'Informe se o celular e o endereço devem ser solicitados.');
+        if(typeof value.collectPhone!=='boolean') fail(400,'Informe se o celular deve ser solicitado.');
         if(!Number.isSafeInteger(value.gatewayRatePpm)||value.gatewayRatePpm<0||value.gatewayRatePpm>=1000000) fail(400,'Informe uma taxa de cartão válida.');
         if(!Number.isSafeInteger(value.minMarginPpm)||value.minMarginPpm<300000||value.minMarginPpm>=1000000) fail(400,'A margem mínima de lucro precisa ser de pelo menos 30%.');
         if(value.gatewayRatePpm+value.minMarginPpm>=1000000) fail(400,'A soma da taxa de cartão com a margem não pode chegar a 100%.');
@@ -165,8 +159,9 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         const ids=new Set();
         for(const product of value.products) {
           if(!product||typeof product!=='object'||Array.isArray(product)) fail(400,'Produto inválido.');
-          only(product,['id','name','description','price','active','customPrice']);
+          only(product,['id','name','description','price','active','customPrice','image']);
           if(!/^[a-z0-9-]{3,50}$/.test(product.id)||ids.has(product.id)||!text(product.name,2,100)||!text(product.description,3,160)||typeof product.active!=='boolean'||typeof product.customPrice!=='boolean') fail(400,'Revise os produtos e seus identificadores.');
+          if(product.image!==undefined&&product.image!==''&&(typeof product.image!=='string'||product.image.length>180000||!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+=*$/.test(product.image))) fail(400,'Imagem do produto inválida.');
           if(!product.customPrice&&(!Number.isSafeInteger(product.price)||product.price<value.minAmount||product.price>value.maxAmount)) fail(400,'O preço fixo deve respeitar os limites configurados.');
           if(product.customPrice&&product.price!==null) fail(400,'Produtos com valor livre não devem ter preço fixo.');
           ids.add(product.id);
@@ -220,7 +215,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     }
     if(path.endsWith('/create')&&request.method==='POST') {
       if(!enabled) fail(503,'Cobranças InfinitePay ainda não ativadas.');
-      const body=await readBody(request);only(body,['amount','totalCharge','productId','name','email','cpf','phone','address','confirmed']);
+      const body=await readBody(request);only(body,['amount','totalCharge','productId','name','email','cpf','phone','confirmed']);
       const {minAmount,maxAmount}=current.value;
       const product=current.value.products.find(item=>item.id===body.productId&&item.active);
       if(current.value.products.some(item=>item.active)&&!product) fail(400,'Selecione um produto ou serviço disponível.');
@@ -232,11 +227,6 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       if(body.confirmed!==true||body.totalCharge!==totalCharge) fail(409,'O valor mudou. Atualize a página e tente novamente.');
       if(!text(body.name,3,140)||!email(body.email)||!isValidCPF(body.cpf)) fail(400,'Preencha nome, e-mail e CPF válidos.');
       if(current.value.collectPhone&&!isValidPhone(body.phone)) fail(400,'Informe um celular válido com DDD.');
-      if(current.value.collectAddress) {
-        if(!body.address||typeof body.address!=='object'||Array.isArray(body.address)) fail(400,'Informe o endereço completo.');
-        only(body.address,['cep','street','neighborhood','number','complement']);
-        if(!isValidAddress(body.address)) fail(400,'Informe um endereço completo e válido (CEP, rua, bairro e número).');
-      }
       if(!/^https:\/\/[^/]+$/.test(env.PUBLIC_BASE_URL||'')||!env.PII_ENCRYPTION_KEY) fail(503,'Endereço ou criptografia pendentes.');
       const key=request.headers.get('idempotency-key')||'';
       if(!/^[A-Za-z0-9-]{16,100}$/.test(key)) fail(400,'Não foi possível iniciar o pagamento. Atualize a página e tente novamente.');
@@ -250,7 +240,6 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       const quote={serviceAmount:body.amount,totalCharge,productId:product?.id||null,productName:product?.name||current.value.serviceLabel,serviceDescription:product?.description||product?.name||current.value.serviceLabel};
       const detailData={name:body.name.trim(),email:body.email.trim().toLowerCase(),cpf:normalizeCPF(body.cpf),productName:quote.productName,serviceDescription:quote.serviceDescription};
       if(current.value.collectPhone) detailData.phone=onlyDigits(body.phone);
-      if(current.value.collectAddress) detailData.address=normalizedAddress(body.address);
       const detail=await encryptPII(env,JSON.stringify(detailData));
       const inserted=await run(db,"INSERT OR IGNORE INTO infinite_operations(id,idempotency_key,request_hash,handle,status,quote,recipient_encrypted,access_digest,created_at) VALUES (?,?,?,?,'CHECKOUT_CREATING',?,?,?,?)",id,key,hash,current.value.handle,JSON.stringify(quote),detail,await sha256(access),now).run();
       if(!inserted.meta.changes) {
@@ -269,7 +258,6 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
           customer,
           items:[{quantity:1,price:totalCharge,description:`${quote.productName} — ${quote.serviceDescription}`}],
         };
-        if(current.value.collectAddress) linksPayload.address=normalizedAddress(body.address);
         const result=await infiniteRequest('/links',linksPayload);
         const url=checkoutUrl(result.url);
         await run(db,"UPDATE infinite_operations SET checkout_url=?,status=CASE WHEN status='CHECKOUT_CREATING' THEN 'AWAITING_PAYMENT' ELSE status END WHERE id=?",url,id).run();

@@ -52,7 +52,7 @@ test('fluxo de serviços limita valores e cria checkout pelo valor exato',async(
     return new Response(JSON.stringify({url:'https://checkout.infinitepay.com.br/lucas-banza?lenc=teste'}),{status:200,headers:{'content-type':'application/json'}});
   };
   try {
-    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:20000,totalCharge:30770,productId:'opcao-5',name:'Pessoa de Teste',email:'pessoa@example.com',cpf:'529.982.247-25',phone:'(11) 91234-5678',address:{cep:'01310-100',street:'Av. Paulista',neighborhood:'Bela Vista',number:'1000',complement:'Sala 2'},confirmed:true}});
+    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:20000,totalCharge:30770,productId:'opcao-5',name:'Pessoa de Teste',email:'pessoa@example.com',cpf:'529.982.247-25',phone:'(11) 91234-5678',confirmed:true}});
     assert.equal(created.status,201);
     assert.match(created.data.checkoutUrl,/^https:\/\/checkout\.infinitepay\.com\.br/);
     assert.ok(created.data.accessToken.length>=32);
@@ -60,23 +60,20 @@ test('fluxo de serviços limita valores e cria checkout pelo valor exato',async(
     assert.equal(payload.items[0].price,30770);
     assert.match(payload.items[0].description,/Opção 5.*valor personalizado/);
     assert.deepEqual(payload.customer,{name:'Pessoa de Teste',email:'pessoa@example.com',phone_number:'+5511912345678'});
-    assert.deepEqual(payload.address,{cep:'01310100',street:'Av. Paulista',neighborhood:'Bela Vista',number:'1000',complement:'Sala 2'});
+    assert.equal(payload.address,undefined);
     const stored=h.sqlite.prepare('SELECT recipient_encrypted FROM infinite_operations').get().recipient_encrypted;
-    assert.doesNotMatch(stored,/pessoa@example\.com|Pessoa de Teste|52998224725|91234-?5678|Paulista/);
+    assert.doesNotMatch(stored,/pessoa@example\.com|Pessoa de Teste|52998224725|91234-?5678/);
   } finally {globalThis.fetch=oldFetch;}
 });
 
-test('celular e endereço são exigidos por padrão e podem ser desativados pelo painel',async()=>{
+test('celular é exigido por padrão e pode ser desativado pelo painel',async()=>{
   const h=setup(),c=h.client();
   const base={amount:5000,totalCharge:7693,productId:'opcao-2',name:'Cliente Sem Dados',email:'semdados@example.com',cpf:'52998224725',confirmed:true};
   assert.equal((await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:base})).status,400);
-  assert.equal((await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{...base,phone:'11912345678'}})).status,400);
   assert.equal((await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{...base,phone:'123'}})).status,400);
-  assert.equal((await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{...base,phone:'11912345678',address:{cep:'123',street:'Rua',neighborhood:'Centro',number:'1'}}})).status,400);
   const initial=await c('infinitepay/admin/config',{admin:true});
   assert.equal(initial.data.value.collectPhone,true);
-  assert.equal(initial.data.value.collectAddress,true);
-  const saved=await c('infinitepay/admin/config',{method:'PUT',admin:true,headers:{origin:'https://pixai.test'},body:{revision:initial.data.revision,value:{...initial.data.value,collectPhone:false,collectAddress:false}}});
+  const saved=await c('infinitepay/admin/config',{method:'PUT',admin:true,headers:{origin:'https://pixai.test'},body:{revision:initial.data.revision,value:{...initial.data.value,collectPhone:false}}});
   assert.equal(saved.status,200);
   assert.equal((await c('infinitepay/bootstrap')).data.collectPhone,false);
   const oldFetch=globalThis.fetch;
@@ -86,7 +83,6 @@ test('celular e endereço são exigidos por padrão e podem ser desativados pelo
     const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:base});
     assert.equal(created.status,201);
     assert.deepEqual(payload.customer,{name:'Cliente Sem Dados',email:'semdados@example.com'});
-    assert.equal(payload.address,undefined);
   } finally {globalThis.fetch=oldFetch;}
 });
 
@@ -101,7 +97,7 @@ test('retorno autenticado consulta a InfinitePay e conclui o pagamento',async()=
     return new Response(JSON.stringify({success:true,paid:true,amount:13077,paid_amount:13077,installments:1,capture_method:'pix'}),{status:200});
   };
   try {
-    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:8500,totalCharge:13077,productId:'opcao-5',name:'Cliente Teste',email:'cliente@example.com',cpf:'52998224725',phone:'11987654321',address:{cep:'20040020',street:'Av. Rio Branco',neighborhood:'Centro',number:'50'},confirmed:true}});
+    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:8500,totalCharge:13077,productId:'opcao-5',name:'Cliente Teste',email:'cliente@example.com',cpf:'52998224725',phone:'11987654321',confirmed:true}});
     ({id,accessToken}=created.data);
     const confirmed=await c('infinitepay/confirm',{method:'POST',headers:{'x-operation-token':accessToken},body:{id,transaction_nsu:'tx-1',invoice_slug:'inv-1'}});
     assert.equal(confirmed.status,200);

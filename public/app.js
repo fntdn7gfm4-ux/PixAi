@@ -1,9 +1,10 @@
 const main=document.querySelector('#main');
 const notice=document.querySelector('#notification');
 const adminPage=document.body?.dataset?.admin==='true';
-let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Opção selecionada',collectPhone:true,collectAddress:true,products:[],content:{}};
+let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Opção selecionada',collectPhone:true,products:[],content:{}};
 let adminToken=sessionStorage.getItem('pixai-admin-token')||'';
 let amountPreviewTimer;
+const PLACEHOLDER_IMAGE='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#e7ecf7"/><path d="M30 66 L44 48 L54 58 L70 36 L70 70 L30 70 Z" fill="#aab8da"/><circle cx="40" cy="38" r="7" fill="#aab8da"/></svg>');
 
 const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const money=cents=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format((Number(cents)||0)/100);
@@ -58,18 +59,12 @@ function home() {
         <h2>${esc(content.formTitle)}</h2><p>${esc(content.formHelp)}</p>
         <form id="service-form">
           <div class="form-grid">
-            ${products.length?`<div class="wide"><label for="product">${esc(bootstrap.serviceLabel)}</label><select id="product" name="productId" required><option value="">Selecione</option>${products.map(product=>`<option value="${esc(product.id)}">${esc(product.name)}${product.customPrice?' — valor personalizado':' — '+money(product.displayPrice??product.price)}</option>`).join('')}</select></div>`:''}
+            ${products.length?`<div class="wide"><label>${esc(bootstrap.serviceLabel)}</label><div class="product-grid" id="product-grid" role="radiogroup" aria-label="${esc(bootstrap.serviceLabel)}">${products.map(product=>`<label class="product-card"><input type="radio" name="productId" value="${esc(product.id)}" required><img src="${product.image||PLACEHOLDER_IMAGE}" width="100" height="100" alt=""><span class="product-card-name">${esc(product.name)}</span><span class="product-card-price">${product.customPrice?'Valor personalizado':money(product.displayPrice??product.price)}</span></label>`).join('')}</div></div>`:''}
             <div class="wide" id="custom-amount" hidden><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p><p class="field-help" id="amount-total"></p></div>
             <div><label for="name">${esc(content.nameLabel)}</label><input id="name" name="name" autocomplete="name" maxlength="140" required></div>
             <div><label for="email">${esc(content.emailLabel)}</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" required></div>
             <div class="wide"><label for="cpf">${esc(content.cpfLabel)}</label><input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" required><p class="notice cpf-notice">${esc(content.cpfNotice)}</p></div>
             ${bootstrap.collectPhone?`<div><label for="phone">Celular</label><input id="phone" name="phone" inputmode="numeric" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000" required></div>`:''}
-            ${bootstrap.collectAddress?`
-            <div><label for="cep">CEP</label><input id="cep" name="cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000" required></div>
-            <div><label for="street">Rua</label><input id="street" name="street" autocomplete="address-line1" maxlength="140" required></div>
-            <div><label for="neighborhood">Bairro</label><input id="neighborhood" name="neighborhood" autocomplete="address-level3" maxlength="100" required></div>
-            <div><label for="number">Número</label><input id="number" name="number" autocomplete="off" maxlength="20" required></div>
-            <div class="wide"><label for="complement">Complemento (opcional)</label><input id="complement" name="complement" autocomplete="address-line2" maxlength="100"></div>`:''}
           </div>
           <p class="fine-print">Ao continuar, você confirma os dados informados e aceita os <a href="#terms"><u>Termos de uso</u></a> e a <a href="#privacy"><u>Política de privacidade</u></a>.</p>
           <button class="btn full" ${bootstrap.paymentsEnabled?'':'disabled'}>${bootstrap.paymentsEnabled?esc(content.buttonLabel)+' →':'Pagamentos indisponíveis'}</button>
@@ -89,8 +84,8 @@ function home() {
       <div class="benefit"><span class="line-icon" aria-hidden="true">◎</span><div><strong>Total transparente</strong><p>O valor exibido na página já é o total cobrado no checkout, sem surpresas.</p></div></div>
     </section>`;
   document.querySelector('#service-form')?.addEventListener('submit',startPayment);
-  document.querySelector('#product')?.addEventListener('change',event=>{
-    const product=products.find(item=>item.id===event.currentTarget.value);
+  document.querySelector('#product-grid')?.addEventListener('change',event=>{
+    const product=products.find(item=>item.id===event.target.value);
     const form=document.querySelector('#service-form');
     if(!product||!form) return;
     const amount=form.elements.namedItem('amount');
@@ -110,7 +105,6 @@ function home() {
   });
   document.querySelector('#cpf')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');});
   document.querySelector('#phone')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4,5})(\d{4})$/,'$1-$2');});
-  document.querySelector('#cep')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,8);event.currentTarget.value=digits.replace(/(\d{5})(\d)/,'$1-$2');});
 }
 
 async function startPayment(event) {
@@ -128,10 +122,6 @@ async function startPayment(event) {
       name:field('name').value,email:field('email').value,cpf:field('cpf').value,confirmed:true,
     };
     if(bootstrap.collectPhone) payload.phone=field('phone').value;
-    if(bootstrap.collectAddress) payload.address={
-      cep:field('cep').value,street:field('street').value,neighborhood:field('neighborhood').value,
-      number:field('number').value,complement:field('complement').value,
-    };
     const result=await api('infinitepay/create',{method:'POST',body:payload,idempotencyKey:key});
     if(!result.checkoutUrl) throw Error('O checkout não respondeu. Aguarde um instante e tente novamente.');
     sessionStorage.setItem('pixai-operation-'+result.id,result.accessToken);
@@ -203,9 +193,33 @@ function contentEditor(key,label,value) {
   const wide=['subtitle','formHelp'].includes(key),tag=wide?'textarea':'input';
   return `<div class="${wide?'wide':''}"><label for="content-${key}">${label}</label>${tag==='textarea'?`<textarea id="content-${key}" data-content="${key}" maxlength="300" required>${esc(value)}</textarea>`:`<input id="content-${key}" data-content="${key}" maxlength="300" value="${esc(value)}" required>`}</div>`;
 }
+function fileToSquareDataUrl(file,size=100,quality=0.82) {
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(Error('Não foi possível ler o arquivo.'));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(Error('Arquivo de imagem inválido.'));
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d');
+        const side=Math.min(img.width,img.height),sx=(img.width-side)/2,sy=(img.height-side)/2;
+        ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 function productEditor(product) {
-  return `<div class="product-editor" data-product-row data-id="${esc(product.id)}">
+  return `<div class="product-editor" data-product-row data-id="${esc(product.id)}" data-image="${esc(product.image||'')}">
     <div class="product-editor-head"><strong>${esc(product.name||'Novo produto')}</strong><button class="btn text remove-product" type="button">Remover</button></div>
+    <div class="product-image-field">
+      <img class="product-image-preview" src="${product.image||PLACEHOLDER_IMAGE}" width="100" height="100" alt="">
+      <div><label class="btn secondary file-label">Escolher imagem (100x100)<input type="file" accept="image/*" data-product-image hidden></label><button class="btn text remove-image" type="button">Remover imagem</button></div>
+    </div>
     <div class="form-grid">
       <div><label>Nome</label><input data-product-field="name" maxlength="100" value="${esc(product.name)}" required></div>
       <div><label>Preço</label><div class="money-field"><span>R$</span><input data-product-field="price" inputmode="decimal" value="${product.price==null?'':(product.price/100).toFixed(2).replace('.',',')}" ${product.customPrice?'disabled':''}></div></div>
@@ -219,6 +233,18 @@ function wireProductRows() {
     row.querySelector('.remove-product').onclick=()=>row.remove();
     const custom=row.querySelector('[data-product-field="customPrice"]'),price=row.querySelector('[data-product-field="price"]');
     custom.onchange=()=>{price.disabled=custom.checked;if(custom.checked)price.value='';};
+    const preview=row.querySelector('.product-image-preview'),fileInput=row.querySelector('[data-product-image]');
+    fileInput.onchange=async()=>{
+      const file=fileInput.files?.[0];
+      if(!file) return;
+      try {
+        const dataUrl=await fileToSquareDataUrl(file);
+        row.dataset.image=dataUrl;
+        preview.src=dataUrl;
+      } catch(error) {alertUser(error.message);}
+      fileInput.value='';
+    };
+    row.querySelector('.remove-image').onclick=()=>{row.dataset.image='';preview.src=PLACEHOLDER_IMAGE;};
   });
 }
 async function adminDashboard() {
@@ -238,8 +264,7 @@ async function adminDashboard() {
           <div><label for="gateway-rate">Taxa estimada do cartão (%)</label><input id="gateway-rate" name="gateway-rate" inputmode="decimal" value="${(configuration.value.gatewayRatePpm/10000).toFixed(2).replace('.',',')}" required><p class="field-help">Usada para calcular o valor final cobrado. Ajuste conforme a tarifa real da sua conta InfinitePay.</p></div>
           <div><label for="min-margin">Margem mínima de lucro (%)</label><input id="min-margin" name="min-margin" inputmode="decimal" value="${(configuration.value.minMarginPpm/10000).toFixed(2).replace('.',',')}" required><p class="field-help">Somada ao preço de cada serviço antes de enviar ao checkout. Mínimo de 30%.</p></div>
         </div><label class="check-label"><input id="enabled" name="enabled" type="checkbox" ${configuration.value.enabled?'checked':''}><span>Aceitar novos pagamentos</span></label>
-        <label class="check-label"><input id="collect-phone" name="collect-phone" type="checkbox" ${configuration.value.collectPhone?'checked':''}><span>Pedir celular no formulário (envia para a InfinitePay)</span></label>
-        <label class="check-label"><input id="collect-address" name="collect-address" type="checkbox" ${configuration.value.collectAddress?'checked':''}><span>Pedir endereço no formulário (envia para a InfinitePay)</span></label></section>
+        <label class="check-label"><input id="collect-phone" name="collect-phone" type="checkbox" ${configuration.value.collectPhone?'checked':''}><span>Pedir celular no formulário (envia para a InfinitePay)</span></label></section>
         <section class="panel mt-25"><h2>Textos e campos da página</h2><div class="form-grid">${contentFields.map(([key,label])=>contentEditor(key,label,configuration.value.content[key])).join('')}</div></section>
         <section class="panel mt-25"><div class="admin-top"><div><h2>Produtos e serviços</h2><p>Crie preços fixos ou deixe o cliente informar o valor.</p></div><button id="add-product" class="btn secondary" type="button">+ Adicionar</button></div><div id="product-list">${configuration.value.products.map(productEditor).join('')}</div></section>
         <button class="btn full save-admin" type="submit">Salvar todas as alterações</button>
@@ -261,13 +286,13 @@ async function adminDashboard() {
         const content=Object.fromEntries(contentFields.map(([key])=>[key,document.querySelector(`[data-content="${key}"]`).value]));
         const products=[...document.querySelectorAll('[data-product-row]')].map(row=>{
           const field=name=>row.querySelector(`[data-product-field="${name}"]`),customPrice=field('customPrice').checked;
-          return {id:row.dataset.id,name:field('name').value,description:field('description').value,price:customPrice?null:amountFrom(field('price').value),active:field('active').checked,customPrice};
+          return {id:row.dataset.id,name:field('name').value,description:field('description').value,price:customPrice?null:amountFrom(field('price').value),active:field('active').checked,customPrice,image:row.dataset.image||''};
         });
         await api('infinitepay/admin/config',{method:'PUT',admin:true,body:{revision:configuration.revision,value:{
           handle:elements.namedItem('handle').value,serviceLabel:elements.namedItem('service-label').value,enabled:elements.namedItem('enabled').checked,
           minAmount:amountFrom(elements.namedItem('min-amount').value),maxAmount:amountFrom(elements.namedItem('max-amount').value),
           gatewayRatePpm:ppmFrom(elements.namedItem('gateway-rate').value),minMarginPpm:ppmFrom(elements.namedItem('min-margin').value),
-          collectPhone:elements.namedItem('collect-phone').checked,collectAddress:elements.namedItem('collect-address').checked,content,products,
+          collectPhone:elements.namedItem('collect-phone').checked,content,products,
         }}});
         alertUser('Página, campos e produtos atualizados.');adminDashboard();
       }
@@ -277,8 +302,7 @@ async function adminDashboard() {
       try {
         const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});
         const phone=detail.phone?` — Celular ${detail.phone.replace(/(\d{2})(\d{4,5})(\d{4})/,'($1) $2-$3')}`:'';
-        const address=detail.address?` — ${detail.address.street}, ${detail.address.number}${detail.address.complement?' ('+detail.address.complement+')':''} — ${detail.address.neighborhood} — CEP ${detail.address.cep.replace(/(\d{5})(\d{3})/,'$1-$2')}`:'';
-        alertUser(`${detail.name} — ${detail.email} — CPF ${detail.cpf||'não registrado'} — ${detail.serviceDescription||'Serviço'}${phone}${address}`);
+        alertUser(`${detail.name} — ${detail.email} — CPF ${detail.cpf||'não registrado'} — ${detail.serviceDescription||'Serviço'}${phone}`);
       }
       catch(error){alertUser(error.message);}
     });
