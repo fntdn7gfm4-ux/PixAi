@@ -12,7 +12,7 @@ const amountFrom=value=>{
   const number=Number(normalized);
   return Number.isFinite(number)?Math.round(number*100):NaN;
 };
-const statusLabel={CHECKOUT_CREATING:'Criando checkout',CHECKOUT_UNCERTAIN:'Confira na InfinitePay',AWAITING_PAYMENT:'Aguardando pagamento',COMPLETED:'Pagamento confirmado',PAYMENT_CONFIRMED:'Pagamento confirmado',READY_FOR_MANUAL_PIX:'Registro antigo',FAILED:'Falhou'};
+const statusLabel={CHECKOUT_CREATING:'Criando checkout',CHECKOUT_UNCERTAIN:'Confira na InfinitePay',AWAITING_PAYMENT:'Aguardando pagamento',COMPLETED:'Pagamento confirmado',DELIVERED:'Produto entregue',PAYMENT_CONFIRMED:'Pagamento confirmado',READY_FOR_MANUAL_PIX:'Registro antigo',FAILED:'Falhou'};
 
 function alertUser(message) {
   notice.textContent=message;
@@ -38,7 +38,7 @@ function home() {
   const content={
     eyebrow:'Checkout seguro pela InfinitePay',title:'Pague seu serviço com clareza e segurança.',subtitle:'Informe os dados do seu orçamento e siga para o ambiente de pagamento da InfinitePay.',
     formTitle:'Dados do pagamento',formHelp:'Use a descrição, a referência e o valor que você recebeu no orçamento ou contrato.',
-    referenceLabel:'Referência do serviço',referencePlaceholder:'Ex.: ORC-1024',descriptionLabel:'Serviço contratado',descriptionPlaceholder:'Ex.: consultoria, manutenção ou criação de conteúdo',
+    descriptionLabel:'Serviço contratado',descriptionPlaceholder:'Ex.: consultoria, manutenção ou criação de conteúdo',
     amountLabel:'Valor',nameLabel:'Nome do cliente',emailLabel:'E-mail',buttonLabel:'Continuar para o pagamento',...bootstrap.content,
   };
   const products=bootstrap.products||[];
@@ -53,7 +53,6 @@ function home() {
         <form id="service-form">
           <div class="form-grid">
             ${products.length?`<div class="wide"><label for="product">${esc(bootstrap.serviceLabel)}</label><select id="product" name="productId" required><option value="">Selecione</option>${products.map(product=>`<option value="${esc(product.id)}">${esc(product.name)}${product.customPrice?'':' — '+money(product.price)}</option>`).join('')}</select></div>`:''}
-            <div><label for="reference">${esc(content.referenceLabel)}</label><input id="reference" name="reference" maxlength="80" required placeholder="${esc(content.referencePlaceholder)}"></div>
             <div><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" required placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p></div>
             <div class="wide"><label for="description">${esc(content.descriptionLabel)}</label><input id="description" name="description" maxlength="160" required placeholder="${esc(content.descriptionPlaceholder)}"></div>
             <div><label for="name">${esc(content.nameLabel)}</label><input id="name" name="name" autocomplete="name" maxlength="140" required></div>
@@ -99,7 +98,7 @@ async function startPayment(event) {
     const quoted=await api('infinitepay/quote',{method:'POST',body:{amount,productId}});
     const key=crypto.randomUUID();
     const result=await api('infinitepay/create',{method:'POST',body:{
-      amount,totalCharge:quoted.quote.totalCharge,productId,serviceReference:field('reference').value,
+      amount,totalCharge:quoted.quote.totalCharge,productId,
       serviceDescription:field('description').value,name:field('name').value,email:field('email').value,confirmed:field('confirmed').checked,
     },});
     if(!result.checkoutUrl) throw Error('O checkout não respondeu. Aguarde um instante e tente novamente.');
@@ -119,13 +118,13 @@ async function resultPage(params) {
       await api('infinitepay/confirm',{method:'POST',operationToken:token,body:{id,transaction_nsu:params.get('transaction_nsu'),invoice_slug:params.get('invoice_slug')}}).catch(()=>null);
     }
     const operation=await api('infinitepay/status?id='+encodeURIComponent(id),{operationToken:token});
-    const complete=operation.status==='COMPLETED'||operation.status==='PAYMENT_CONFIRMED';
+    const complete=['COMPLETED','DELIVERED','PAYMENT_CONFIRMED'].includes(operation.status);
     const quote=operation.quote||{};
     main.innerHTML=`<section class="panel centered">
       <div class="result-head"><div class="result-icon ${complete?'':'pending'}">${complete?'✓':'…'}</div><h1>${complete?'Pagamento confirmado':'Pagamento em processamento'}</h1><p>${complete?'O pagamento do serviço foi registrado com sucesso.':'A InfinitePay ainda está processando ou aguardando o pagamento.'}</p></div>
       <div class="review-box">
+        <div class="row"><span>Opção</span><strong>${esc(quote.productName||'Serviço')}</strong></div>
         <div class="row"><span>Serviço</span><strong>${esc(quote.serviceDescription||'Serviço')}</strong></div>
-        <div class="row"><span>Referência</span><strong>${esc(quote.serviceReference||operation.id)}</strong></div>
         <div class="row"><span>Valor</span><strong>${money(quote.serviceAmount??quote.totalCharge)}</strong></div>
         <div class="row"><span>Status</span><strong>${esc(statusLabel[operation.status]||operation.status)}</strong></div>
         ${operation.payment?`<div class="row"><span>Forma</span><strong>${operation.payment.method==='pix'?'Pix':'Cartão'}${operation.payment.installments>1?' em '+operation.payment.installments+'x':''}</strong></div>`:''}
@@ -166,7 +165,6 @@ function adminLogin() {
 const contentFields=[
   ['eyebrow','Chamada superior'],['title','Título principal'],['subtitle','Texto de apresentação'],
   ['formTitle','Título do formulário'],['formHelp','Orientação do formulário'],
-  ['referenceLabel','Rótulo da referência'],['referencePlaceholder','Exemplo da referência'],
   ['descriptionLabel','Rótulo da descrição'],['descriptionPlaceholder','Exemplo da descrição'],
   ['amountLabel','Rótulo do valor'],['nameLabel','Rótulo do nome'],['emailLabel','Rótulo do e-mail'],['buttonLabel','Texto do botão'],
 ];
@@ -196,7 +194,7 @@ async function adminDashboard() {
   main.innerHTML='<div class="loading">Carregando pagamentos…</div>';
   try {
     const [configuration,data]=await Promise.all([api('infinitepay/admin/config',{admin:true}),api('infinitepay/admin/operations',{admin:true})]);
-    const operations=data.operations||[],completed=operations.filter(item=>['COMPLETED','PAYMENT_CONFIRMED'].includes(item.status));
+    const operations=data.operations||[],completed=operations.filter(item=>['COMPLETED','DELIVERED','PAYMENT_CONFIRMED'].includes(item.status));
     const volume=completed.reduce((sum,item)=>sum+(item.quote.serviceAmount??item.quote.totalCharge??0),0);
     main.innerHTML=`<section class="admin-settings"><div class="admin-top"><div><div class="eyebrow">InfinitePay</div><h1>Painel de pagamentos</h1></div><button id="logout" class="btn secondary">Sair</button></div>
       <div class="metric-grid"><div class="metric"><span>Pagamentos</span><strong>${operations.length}</strong></div><div class="metric"><span>Confirmados</span><strong>${completed.length}</strong></div><div class="metric"><span>Volume confirmado</span><strong>${money(volume)}</strong></div><div class="metric"><span>Integração</span><strong>${configuration.serverEnabled&&configuration.value.enabled?'Ativa':'Pausada'}</strong></div></div>
@@ -211,7 +209,8 @@ async function adminDashboard() {
         <section class="panel" style="margin-top:25px"><div class="admin-top"><div><h2>Produtos e serviços</h2><p>Crie preços fixos ou deixe o cliente informar o valor.</p></div><button id="add-product" class="btn secondary" type="button">+ Adicionar</button></div><div id="product-list">${configuration.value.products.map(productEditor).join('')}</div></section>
         <button class="btn full save-admin" type="submit">Salvar todas as alterações</button>
       </form>
-      <section class="panel" style="margin-top:25px"><h2>Pagamentos recentes</h2><div class="table-wrap">${operations.length?`<table><thead><tr><th>Data</th><th>Referência</th><th>Serviço</th><th>Valor</th><th>Status</th><th>Cliente</th></tr></thead><tbody>${operations.map(item=>`<tr><td>${when(item.createdAt)}</td><td><small>${esc(item.quote.serviceReference||item.id)}</small></td><td>${esc(item.quote.serviceDescription||'Registro anterior')}</td><td>${money(item.quote.serviceAmount??item.quote.totalCharge)}</td><td>${esc(statusLabel[item.status]||item.status)}</td><td><button class="btn text detail" data-id="${esc(item.id)}">Ver dados</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum pagamento registrado.</div>'}</div></section>
+      <section class="panel" style="margin-top:25px"><h2>Pagamentos e entregas</h2><div class="table-wrap">${operations.length?`<table><thead><tr><th>Data</th><th>Produto</th><th>Serviço</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>${operations.map(item=>`<tr><td>${when(item.createdAt)}</td><td>${esc(item.quote.productName||'Registro anterior')}</td><td>${esc(item.quote.serviceDescription||'Registro anterior')}</td><td>${money(item.quote.serviceAmount??item.quote.totalCharge)}</td><td>${esc(statusLabel[item.status]||item.status)}${item.deliveredAt?`<br><small>${when(item.deliveredAt)}</small>`:''}</td><td><button class="btn text detail" data-id="${esc(item.id)}">Cliente</button>${item.status==='COMPLETED'?`<button class="btn text delivery" data-id="${esc(item.id)}">Confirmar entrega</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum pagamento registrado.</div>'}</div></section>
+      <dialog id="delivery-dialog" class="delivery-dialog"><form id="delivery-form" method="dialog"><div class="admin-top"><h2>Validar entrega</h2><button class="btn text" value="cancel" type="button" id="close-delivery">Fechar</button></div><p>Registre quem conferiu e o comprovante, protocolo ou observação da entrega.</p><input type="hidden" name="id"><label for="delivery-operator">Responsável</label><input id="delivery-operator" name="operator" maxlength="100" required><label for="delivery-reference" style="margin-top:16px">Comprovante ou observação</label><textarea id="delivery-reference" name="reference" maxlength="200" required></textarea><label class="check-label"><input name="confirmed" type="checkbox" required><span>Confirmo que o produto ou serviço foi entregue ao cliente.</span></label><button class="btn full" type="submit">Validar entrega</button></form></dialog>
     </section>`;
     document.querySelector('#logout').onclick=()=>{sessionStorage.removeItem('pixai-admin-token');adminToken='';adminLogin();};
     wireProductRows();
@@ -241,6 +240,14 @@ async function adminDashboard() {
       try {const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});alertUser(`${detail.name} — ${detail.email} — ${detail.serviceDescription||'Serviço'}`);}
       catch(error){alertUser(error.message);}
     });
+    const deliveryDialog=document.querySelector('#delivery-dialog'),deliveryForm=document.querySelector('#delivery-form');
+    document.querySelector('#close-delivery').onclick=()=>deliveryDialog.close();
+    document.querySelectorAll('.delivery').forEach(button=>button.onclick=()=>{deliveryForm.reset();deliveryForm.elements.namedItem('id').value=button.dataset.id;deliveryDialog.showModal();});
+    deliveryForm.addEventListener('submit',async event=>{
+      event.preventDefault();const elements=event.currentTarget.elements;
+      try {await api('infinitepay/admin/delivered',{method:'POST',admin:true,body:{id:elements.namedItem('id').value,operator:elements.namedItem('operator').value,reference:elements.namedItem('reference').value,confirmed:elements.namedItem('confirmed').checked}});deliveryDialog.close();alertUser('Entrega validada.');adminDashboard();}
+      catch(error){alertUser(error.message);}
+    });
   } catch(error) {
     if(/obrigatório|401/i.test(error.message)){sessionStorage.removeItem('pixai-admin-token');adminToken='';adminLogin();} else {main.innerHTML=`<div class="notice error">${esc(error.message)}</div>`;}
   }
@@ -257,4 +264,6 @@ function route() {
 }
 
 window.addEventListener('hashchange',route);
+const promo=document.querySelector('#promo-popup');
+if(promo){promo.addEventListener('click',()=>promo.remove());document.addEventListener('keydown',event=>{if(event.key==='Escape')promo.remove();},{once:true});}
 api('infinitepay/bootstrap').then(data=>{bootstrap=data;setEnv();route();}).catch(error=>{setEnv();home();alertUser(error.message);});

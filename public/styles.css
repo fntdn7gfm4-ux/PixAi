@@ -11,6 +11,40 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+.promo-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #061a39d9;
+  cursor: pointer;
+}
+.promo-popup-card {
+  position: relative;
+  width: min(760px, 92vw);
+  max-height: 92vh;
+}
+.promo-popup img {
+  display: block;
+  width: 100%;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px #0008;
+}
+.promo-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 1;
+  padding: 7px 11px;
+  border-radius: 30px;
+  background: #061a39e6;
+  color: #fff;
+  font-size: 12px;
+}
 a {
   color: inherit;
   text-decoration: none;
@@ -885,6 +919,16 @@ td small {
   bottom: 12px;
   z-index: 2;
   box-shadow: 0 8px 24px #061a3924;
+}
+.delivery-dialog {
+  width: min(560px, calc(100% - 32px));
+  border: 0;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 24px 70px #061a3960;
+}
+.delivery-dialog::backdrop {
+  background: #061a3999;
 }
 .integration-list {
   display: grid;

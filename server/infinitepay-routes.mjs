@@ -12,11 +12,16 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     subtitle:'Informe os dados do seu orçamento e siga para o ambiente de pagamento da InfinitePay.',
     formTitle:'Dados do pagamento',
     formHelp:'Use a descrição, a referência e o valor que você recebeu no orçamento ou contrato.',
-    referenceLabel:'Referência do serviço',referencePlaceholder:'Ex.: ORC-1024',
     descriptionLabel:'Serviço contratado',descriptionPlaceholder:'Ex.: consultoria, manutenção ou criação de conteúdo',
     amountLabel:'Valor',nameLabel:'Nome do cliente',emailLabel:'E-mail',buttonLabel:'Continuar para o pagamento',
   };
-  const defaultProducts=[{id:'servico-personalizado',name:'Serviço personalizado',description:'Serviço conforme orçamento ou contrato',price:null,active:true,customPrice:true}];
+  const defaultProducts=[
+    {id:'opcao-1',name:'Opção 1',description:'Serviço contratado — opção 1',price:2000,active:true,customPrice:false},
+    {id:'opcao-2',name:'Opção 2',description:'Serviço contratado — opção 2',price:5000,active:true,customPrice:false},
+    {id:'opcao-3',name:'Opção 3',description:'Serviço contratado — opção 3',price:10000,active:true,customPrice:false},
+    {id:'opcao-4',name:'Opção 4',description:'Serviço contratado — opção 4',price:25000,active:true,customPrice:false},
+    {id:'opcao-5',name:'Opção 5',description:'Serviço contratado — valor personalizado',price:null,active:true,customPrice:true},
+  ];
   const config=async(db,env={})=>{
     const row=await first(db,"SELECT * FROM settings WHERE id='infinitepay'");
     const saved=row?JSON.parse(row.value):{};
@@ -31,7 +36,8 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     },revision:row?.revision||0};
   };
   const view=row=>({id:row.id,status:row.status,quote:JSON.parse(row.quote),checkoutUrl:row.checkout_url,
-    createdAt:row.created_at,payment:row.payment?JSON.parse(row.payment):null});
+    createdAt:row.created_at,payment:row.payment?JSON.parse(row.payment):null,deliveredAt:row.sent_at,
+    operator:row.operator,deliveryReference:row.transfer_reference});
 
   async function check(db,row,body) {
     if(!text(body.transaction_nsu,1,100)||!text(body.invoice_slug,1,100)) fail(400,'Referências de pagamento inválidas.');
@@ -143,6 +149,19 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       await auditRow(db,'INFINITEPAY_CUSTOMER_VIEWED',row.id).run();
       return json(JSON.parse(await decryptPII(env,row.recipient_encrypted)));
     }
+    if(path.endsWith('/delivered')&&request.method==='POST') {
+      const body=await readBody(request);only(body,['id','operator','reference','confirmed']);
+      if(body.confirmed!==true||!text(body.operator,2,100)||!text(body.reference,2,200)) fail(400,'Informe responsável e comprovante ou observação da entrega.');
+      const row=await first(db,'SELECT * FROM infinite_operations WHERE id=?',body.id);
+      if(!row) fail(404,'Pagamento não encontrado.');
+      if(row.status!=='COMPLETED') fail(409,'Somente um pagamento confirmado e ainda não entregue pode ser validado.');
+      const results=await db.batch([
+        run(db,"UPDATE infinite_operations SET status='DELIVERED',operator=?,transfer_reference=?,sent_at=? WHERE id=? AND status='COMPLETED'",body.operator.trim(),body.reference.trim(),Date.now(),row.id),
+        auditRow(db,'PRODUCT_DELIVERY_CONFIRMED',row.id,{operator:body.operator.trim(),reference:body.reference.trim()}),
+      ]);
+      if(!results[0].meta.changes) fail(409,'A entrega já foi validada por outra sessão.');
+      return json(view(await first(db,'SELECT * FROM infinite_operations WHERE id=?',row.id)));
+    }
     if(path.endsWith('/quote')&&request.method==='POST') {
       const body=await readBody(request);only(body,['amount','productId']);
       if(!enabled&&!isAdmin) fail(503,'Cobranças InfinitePay ainda não ativadas.');
@@ -155,13 +174,13 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     }
     if(path.endsWith('/create')&&request.method==='POST') {
       if(!enabled) fail(503,'Cobranças InfinitePay ainda não ativadas.');
-      const body=await readBody(request);only(body,['amount','totalCharge','productId','serviceReference','serviceDescription','name','email','confirmed']);
+      const body=await readBody(request);only(body,['amount','totalCharge','productId','serviceDescription','name','email','confirmed']);
       const {minAmount,maxAmount}=current.value;
       const product=current.value.products.find(item=>item.id===body.productId&&item.active);
       if(current.value.products.some(item=>item.active)&&!product) fail(400,'Selecione um produto ou serviço disponível.');
       if(product&&!product.customPrice&&body.amount!==product.price) fail(409,'O preço do produto foi alterado. Atualize a página.');
       if(body.confirmed!==true||!Number.isSafeInteger(body.amount)||body.amount<minAmount||body.amount>maxAmount||body.totalCharge!==body.amount) fail(400,'Confira o valor e a confirmação.');
-      if(!text(body.serviceReference,2,80)||!text(body.serviceDescription,3,160)||!text(body.name,3,140)||!email(body.email)) fail(400,'Preencha referência, serviço, nome e e-mail válidos.');
+      if(!text(body.serviceDescription,3,160)||!text(body.name,3,140)||!email(body.email)) fail(400,'Preencha serviço, nome e e-mail válidos.');
       if(!/^https:\/\/[^/]+$/.test(env.PUBLIC_BASE_URL||'')||!env.PII_ENCRYPTION_KEY) fail(503,'Endereço ou criptografia pendentes.');
       const key=request.headers.get('idempotency-key')||'';
       if(!/^[A-Za-z0-9-]{16,100}$/.test(key)) fail(400,'Identificador da tentativa obrigatório.');
@@ -172,8 +191,8 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         return json(view(old));
       }
       const id='SV-'+crypto.randomUUID(),access=crypto.randomUUID()+crypto.randomUUID(),now=Date.now();
-      const quote={serviceAmount:body.amount,totalCharge:body.amount,productId:product?.id||null,productName:product?.name||current.value.serviceLabel,serviceReference:body.serviceReference.trim(),serviceDescription:body.serviceDescription.trim()};
-      const detail=await encryptPII(env,JSON.stringify({name:body.name.trim(),email:body.email.trim().toLowerCase(),serviceReference:quote.serviceReference,serviceDescription:quote.serviceDescription}));
+      const quote={serviceAmount:body.amount,totalCharge:body.amount,productId:product?.id||null,productName:product?.name||current.value.serviceLabel,serviceDescription:body.serviceDescription.trim()};
+      const detail=await encryptPII(env,JSON.stringify({name:body.name.trim(),email:body.email.trim().toLowerCase(),productName:quote.productName,serviceDescription:quote.serviceDescription}));
       const inserted=await run(db,"INSERT OR IGNORE INTO infinite_operations(id,idempotency_key,request_hash,handle,status,quote,recipient_encrypted,access_digest,created_at) VALUES (?,?,?,?,'CHECKOUT_CREATING',?,?,?,?)",id,key,hash,current.value.handle,JSON.stringify(quote),detail,await sha256(access),now).run();
       if(!inserted.meta.changes) {
         old=await first(db,'SELECT * FROM infinite_operations WHERE idempotency_key=?',key);
@@ -187,7 +206,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
           redirect_url:env.PUBLIC_BASE_URL+'/infinitepay-return.html#'+encodeURIComponent(id)+'/'+access,
           webhook_url:env.PUBLIC_BASE_URL+'/api/infinitepay/webhook',
           customer:{name:body.name.trim(),email:body.email.trim().toLowerCase()},
-          items:[{quantity:1,price:body.amount,description:`${quote.serviceDescription} — ${quote.serviceReference}`}],
+          items:[{quantity:1,price:body.amount,description:`${quote.productName} — ${quote.serviceDescription}`}],
         });
         const url=checkoutUrl(result.url);
         await run(db,"UPDATE infinite_operations SET checkout_url=?,status=CASE WHEN status='CHECKOUT_CREATING' THEN 'AWAITING_PAYMENT' ELSE status END WHERE id=?",url,id).run();
