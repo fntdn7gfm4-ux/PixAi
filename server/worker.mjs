@@ -404,14 +404,14 @@ async function reconcilePayment(env,db,row,expectedPaymentId=null) {
   const funded=payments.every(p=>p.status==='RECEIVED') && received>=q.pixAmount;
   const approved=payments.every(p=>['CONFIRMED','RECEIVED'].includes(p.status));
   let next=disputed?'PAYMENT_DISPUTED':failed?'PAYMENT_FAILED':funded?'FUNDS_AVAILABLE':approved&&env.FUNDING_MODE==='prefunded'?'PAYMENT_APPROVED':'AWAITING_FUNDS';
-  await run(db,"UPDATE real_operations SET status=? WHERE id=? AND (status IN ('AWAITING_PAYMENT','AWAITING_FUNDS','FUNDS_AVAILABLE','PAYMENT_APPROVED') OR ?='PAYMENT_DISPUTED')",next,row.id,next).run();
+  await run(db,"UPDATE real_operations SET status=? WHERE id=? AND (status IN ('AWAITING_PAYMENT','AWAITING_FUNDS','FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY') OR ?='PAYMENT_DISPUTED')",next,row.id,next).run();
   if(funded && !disputed) await run(db,'UPDATE real_operations SET funding_exposure=0 WHERE id=?',row.id).run();
   await auditRow(db,'PAYMENT_RECONCILED',row.id,{gross,received,paymentCount:payments.length,status:next}).run();
   return {funded:funded&&!disputed&&!failed,approved:approved&&!disputed&&!failed,payments};
 }
 async function triggerPixTransfer(env, db, operationId) {
   const row=await first(db,'SELECT * FROM real_operations WHERE id=?',operationId);
-  if(!row || !['FUNDS_AVAILABLE','PAYMENT_APPROVED'].includes(row.status) || !row.review_reference) fail(409,'Pagamento conciliado e revisão de identidade são obrigatórios.');
+  if(!row || !['FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY'].includes(row.status) || !row.review_reference) fail(409,'Pagamento conciliado e revisão de identidade são obrigatórios.');
   const verified=await reconcilePayment(env,db,row);
   const prefunded=env.FUNDING_MODE==='prefunded' && verified.approved;
   if(!verified.funded && !prefunded) fail(409,'Liquidação do cartão ainda não concluída.');
@@ -420,8 +420,13 @@ async function triggerPixTransfer(env, db, operationId) {
   const transferFee=toCents(fees?.transfer?.pix?.feeValue);
   const reserve=Number(env.PREFUND_RESERVE_CENTS || 0),exposure=verified.funded?0:q.pixAmount;
   const cap=Number(env.PREFUND_MAX_OUTSTANDING_CENTS || 0);
-  if(transferFee===null || toCents(balance?.balance)===null || toCents(balance.balance)<q.pixAmount+transferFee+reserve) fail(409,'Saldo disponível insuficiente para Pix, tarifa e reserva.');
-  const claim=await run(db,"UPDATE real_operations SET status='PIX_SUBMITTING',funding_exposure=? WHERE id=? AND status IN ('FUNDS_AVAILABLE','PAYMENT_APPROVED') AND NOT EXISTS (SELECT 1 FROM real_operations WHERE id<>? AND status IN ('PIX_SUBMITTING','PIX_PROCESSING','PIX_UNCERTAIN')) AND (?=0 OR (SELECT COALESCE(SUM(funding_exposure),0) FROM real_operations)+?<=?)",exposure,row.id,row.id,exposure,exposure,cap).run();
+  if(transferFee===null || toCents(balance?.balance)===null) fail(502,'Não foi possível verificar saldo e tarifa.');
+  if(toCents(balance.balance)<q.pixAmount+transferFee+reserve) {
+    await run(db,"UPDATE real_operations SET status='AWAITING_LIQUIDITY' WHERE id=? AND status IN ('FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY')",row.id).run();
+    await auditRow(db,'PIX_WAITING_FOR_FUNDS',row.id).run();
+    return;
+  }
+  const claim=await run(db,"UPDATE real_operations SET status='PIX_SUBMITTING',funding_exposure=? WHERE id=? AND status IN ('FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY') AND NOT EXISTS (SELECT 1 FROM real_operations WHERE id<>? AND status IN ('PIX_SUBMITTING','PIX_PROCESSING','PIX_UNCERTAIN')) AND (?=0 OR (SELECT COALESCE(SUM(funding_exposure),0) FROM real_operations)+?<=?)",exposure,row.id,row.id,exposure,exposure,cap).run();
   if(!claim.meta.changes) fail(409,'Transferência já iniciada ou operação bloqueada.');
   try {
     const transfer=await sendPixTransfer(env,{valueCents:q.pixAmount,pixAddressKey:await decryptPII(env,row.pix_key_encrypted),pixAddressKeyType:row.pix_key_type,externalReference:row.id,description:'Pix '+row.id});
@@ -594,7 +599,7 @@ async function realApi(request, env, ctx, path) {
       if(body.confirmed!==true || typeof body.reviewReference!=='string' || body.reviewReference.length<10 || body.reviewReference.length>200) fail(400,'Informe a referência da revisão de identidade e o aceite explícito.');
       const row=await first(db,'SELECT * FROM real_operations WHERE id=?',body.id);
       if(!row || row.provider_environment!==env.ASAAS_ENV || JSON.parse(row.value).pixAmount!==body.pixAmount) fail(409,'Operação divergente.');
-      await db.batch([run(db,"UPDATE real_operations SET review_reference=? WHERE id=? AND status IN ('FUNDS_AVAILABLE','PAYMENT_APPROVED')",body.reviewReference,body.id),auditRow(db,'IDENTITY_REVIEW_RECORDED',body.id,{reference:body.reviewReference})]);
+      await db.batch([run(db,"UPDATE real_operations SET review_reference=? WHERE id=? AND status IN ('FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY')",body.reviewReference,body.id),auditRow(db,'IDENTITY_REVIEW_RECORDED',body.id,{reference:body.reviewReference})]);
       await triggerPixTransfer(env,db,body.id);
       return json(realReceipt(await first(db,'SELECT * FROM real_operations WHERE id=?',body.id)));
     }

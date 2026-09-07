@@ -301,7 +301,7 @@ test('chave de produção sozinha não habilita pagamentos e recibo não expõe 
   const receipt=(await c('real/status/'+id)).data;assert.equal(receipt.quote.profit,undefined);assert.equal(receipt.quote.gatewayRate,undefined);
 });
 test('capital próprio permite cartão confirmado, mas respeita limite e saldo com tarifa',async()=>{
-  for(const [cap,balance,expected] of [[9999,1000,409],[100000,100,409],[100000,1000,200]]) {
+  for(const [cap,balance,expected] of [[9999,1000,409],[100000,100,200],[100000,1000,200]]) {
     const {h,c,id,q}=await fixture();let sent=0;
     Object.assign(h.env,{FUNDING_MODE:'prefunded',PREFUND_MAX_OUTSTANDING_CENTS:String(cap),PREFUND_RESERVE_CENTS:'0'});
     const restore=mockAsaas([
@@ -312,8 +312,27 @@ test('capital próprio permite cartão confirmado, mas respeita limite e saldo c
     try {
       await webhook(c,'evt_capital');assert.equal(operation(h,id).status,'PAYMENT_APPROVED');
       const r=await c('real/admin/release',{method:'POST',admin:true,headers:{origin:'https://pixai.test'},body:{id,reviewReference:'fixture-identity-reviewed',pixAmount:10000,confirmed:true}});
-      assert.equal(r.status,expected);assert.equal(sent,expected===200?1:0);
-      assert.equal(operation(h,id).funding_exposure,expected===200?10000:0);
+      const shouldSend=expected===200 && balance>100;
+      assert.equal(r.status,expected);assert.equal(sent,shouldSend?1:0);
+      assert.equal(operation(h,id).funding_exposure,shouldSend?10000:0);
+      if(balance===100) assert.equal(operation(h,id).status,'AWAITING_LIQUIDITY');
     } finally {restore();}
   }
+});
+test('saldo zero mantém Pix pendente e aporte permite uma única transferência sem nova cobrança',async()=>{
+  const {h,c,id,q}=await fixture();let balance=0,sent=0;
+  Object.assign(h.env,{FUNDING_MODE:'prefunded',PREFUND_MAX_OUTSTANDING_CENTS:'100000',PREFUND_RESERVE_CENTS:'0'});
+  const restore=mockAsaas([
+    [/\/payments\?/,()=>({status:200,body:{data:[payment(q,{status:'CONFIRMED'})]}})],
+    [/\/finance\/balance$/,()=>({status:200,body:{balance}})],
+    [/\/transfers$/,()=>{sent++;return {status:200,body:{id:'tr_after_funding'}};}],
+  ]);
+  const release=()=>c('real/admin/release',{method:'POST',admin:true,headers:{origin:'https://pixai.test'},body:{id,reviewReference:'fixture-identity-reviewed',pixAmount:10000,confirmed:true}});
+  try {
+    await webhook(c,'evt_no_balance');
+    assert.equal((await release()).data.status,'AWAITING_LIQUIDITY');assert.equal(sent,0);
+    balance=1000;
+    assert.equal((await release()).data.status,'PIX_PROCESSING');assert.equal(sent,1);
+    assert.equal((await release()).status,409);assert.equal(sent,1);
+  } finally {restore();}
 });
