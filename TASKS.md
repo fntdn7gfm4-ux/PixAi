@@ -9,7 +9,6 @@
 - [x] Painel de pagamentos e chave para pausar novas cobranças.
 - [x] Editor administrativo dos textos, campos, limites e catálogo de produtos/serviços.
 - [x] Cinco opções iniciais editáveis e validação administrativa da entrega.
-- [x] Popup promocional exibido a cada abertura da página.
 - [x] Termos e privacidade ajustados ao pagamento de serviços.
 - [x] Testes automatizados do novo fluxo.
 

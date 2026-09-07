@@ -17,7 +17,7 @@ Aplicação web para cobrar serviços previamente orçados ou contratados. O cli
 
 O painel em `/admin.html` usa `ADMIN_TOKEN` e permite pausar novas cobranças, ajustar a InfiniteTag, limites, todos os textos e rótulos da página, além de criar, editar, ativar ou remover produtos e serviços com preço fixo ou valor livre. Pagamentos confirmados podem ter a entrega validada com responsável, data e comprovante ou observação. O recebimento segue o plano configurado na conta InfinitePay; o sistema não faz repasse, saque ou conversão de cartão em Pix.
 
-O catálogo inicial tem cinco opções editáveis: R$ 20, R$ 50, R$ 100, R$ 250 e uma opção de valor personalizado. A página pública exibe a arte promocional em um popup a cada carregamento, fechado por clique ou tecla Escape.
+O catálogo inicial tem cinco opções editáveis: R$ 20, R$ 50, R$ 100, R$ 250 e uma opção de valor personalizado.
 
 Para executar localmente: `npm run dev`. Para validar: `npm run check`.
 

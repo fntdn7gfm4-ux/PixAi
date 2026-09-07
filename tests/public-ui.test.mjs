@@ -14,7 +14,7 @@ test('interface pública apresenta somente o pagamento de serviços pela Infinit
   assert.match(script,/Textos e campos da página/);
   assert.match(script,/data-product-field/);
   assert.match(html,/Checkout InfinitePay/);
-  assert.match(html,/pixai-popup\.png/);
+  assert.doesNotMatch(html,/pixai-popup\.png/);
   assert.doesNotMatch(script,/Referência do serviço|referencePlaceholder/);
   assert.doesNotMatch(script,/descriptionLabel|descriptionPlaceholder/);
   assert.match(script,/Confirmar entrega/);
