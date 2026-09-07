@@ -1,5 +1,7 @@
 import { launchReadiness } from "./readiness.mjs";
 import { launchPrice } from "./launch-pricing.mjs";
+import { launchGroups } from '../public/launch-fields.js';
+import legalDrafts from './legal-drafts.json' with {type:'json'};
 import {
   DEFAULT_SETTINGS,
   validateSettings,
@@ -70,7 +72,7 @@ async function limited(db, key, max, window = 60000) {
   if (row.count > max)
     fail(429, "Muitas tentativas. Aguarde alguns minutos e tente novamente.");
 }
-async function readBody(request) {
+async function readBody(request, maxBytes = 16384) {
   if (
     !(request.headers.get("content-type") || "").startsWith("application/json")
   )
@@ -83,7 +85,7 @@ async function readBody(request) {
     const { done, value } = await reader.read();
     if (done) break;
     length += value.length;
-    if (length > 16384) {
+    if (length > maxBytes) {
       await reader.cancel();
       fail(413, "Requisição muito grande.");
     }
@@ -565,6 +567,42 @@ async function realApi(request, env, ctx, path) {
     if (!env.ADMIN_TOKEN || env.ADMIN_TOKEN.length<32 || !(await constantEqual(token,env.ADMIN_TOKEN))) fail(401,'Acesso administrativo obrigatório.');
     if (request.method!=='GET' && request.headers.get('origin')!==new URL(request.url).origin) fail(403,'Origem obrigatória para ação administrativa.');
     if (path==='/api/real/admin/readiness' && request.method==='GET') return json(launchReadiness(env));
+    if(path==='/api/real/admin/launch-draft') {
+      const current=await first(db,"SELECT * FROM launch_draft WHERE id='launch'");
+      const initial={legalName:env.LEGAL_NAME||'',tradeName:'PixAI',cnpj:env.LEGAL_CNPJ||'',taxRegime:'MEI — tributação pendente de confirmação',taxBasis:'Responsável declarou isenção; confirmar DAS e compatibilidade da atividade com o enquadramento.',minimumMargin:30,capitalLimit:1000,balanceReserve:0,termsText:legalDrafts.terms,privacyText:legalDrafts.privacy};
+      if(request.method==='GET') return json({value:current?JSON.parse(current.value):initial,revision:current?.revision||0,updatedAt:current?.updated_at||null});
+      if(request.method==='PUT') {
+        const body=await readBody(request,65536);only(body,['value','revision']);
+        if(!body.value||typeof body.value!=='object'||Array.isArray(body.value)) fail(400,'Dados inválidos.');
+        const fields=launchGroups.flatMap(g=>g.fields);only(body.value,fields.map(f=>f[0]));
+        for(const [key,,type] of fields) {
+          const value=body.value[key];if(value===undefined||value===''||value===null) continue;
+          if(type==='number') {
+            if(typeof value!=='number'||!Number.isFinite(value)||value<0||value>10000000) fail(400,'Valor numérico inválido: '+key);
+            if(key==='minimumMargin' && (value<30||value>=100)) fail(400,'A margem mínima deve ser de 30% a menos de 100%.');
+          } else {
+            if(typeof value!=='string'||value.length>(type==='document'?20000:type==='textarea'?2000:250)) fail(400,'Texto inválido: '+key);
+            if(type==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) fail(400,'E-mail inválido.');
+          }
+        }
+        if(body.revision!==(current?.revision||0)) fail(409,'Outra sessão alterou o formulário. Recarregue antes de salvar.');
+        const statement=current?run(db,"UPDATE launch_draft SET value=?,revision=revision+1,updated_at=? WHERE id='launch' AND revision=?",JSON.stringify(body.value),Date.now(),body.revision):run(db,"INSERT OR IGNORE INTO launch_draft(id,value,revision,updated_at) VALUES ('launch',?,1,?)",JSON.stringify(body.value),Date.now());
+        const results=await db.batch([statement,auditRow(db,'LAUNCH_DRAFT_SAVED','launch',{previousRevision:body.revision})]);
+        if(!results[0].meta.changes) fail(409,'Conflito de edição.');
+        const saved=await first(db,"SELECT * FROM launch_draft WHERE id='launch'");
+        return json({value:JSON.parse(saved.value),revision:saved.revision,updatedAt:saved.updated_at});
+      }
+    }
+    if(path==='/api/real/admin/test-flow' && request.method==='POST') {
+      const body=await readBody(request);only(body,['pixAmount','installments','scenario','confirmed']);
+      if(body.confirmed!==true||!['approved','declined','review','pix_failed','zero_balance'].includes(body.scenario)) fail(400,'Confirme o cenário de teste.');
+      const s=await settings(db);
+      let q;try {q=launchPrice(body.pixAmount,body.installments,s.value);} catch(e){fail(400,e.message);}
+      const timeline=body.scenario==='zero_balance'?['CREATED','AWAITING_PAYMENT','PROCESSING_PAYMENT','PAYMENT_APPROVED','AWAITING_LIQUIDITY']:sandboxTimeline(body.scenario);
+      const result={id:'ADMIN-TEST-'+crypto.randomUUID(),environment:'simulation',status:timeline.at(-1),quote:q,timeline,createdAt:Date.now(),moneyMoved:false};
+      await auditRow(db,'ADMIN_FLOW_TEST',result.id,{scenario:body.scenario,pixAmount:body.pixAmount,status:result.status}).run();
+      return json(result,201);
+    }
     if (path==='/api/real/admin/account' && request.method==='GET') {
       const [fees,balance]=await Promise.all([asaasFetch(env,'GET','/myAccount/fees/'),asaasFetch(env,'GET','/finance/balance')]);
       return json({environment:env.ASAAS_ENV,creditCard:fees.payment?.creditCard,pixTransfer:fees.transfer?.pix,balance:balance.balance});

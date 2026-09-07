@@ -1,3 +1,4 @@
+import {launchGroups} from './launch-fields.js';
 const $ = (s) => document.querySelector(s),
   main = $("#main");
 const money = (v) =>
@@ -38,7 +39,7 @@ const state = {
   receipt: null,
   challenge: null,
   adminToken: "",
-  adminTab: "dashboard",
+  adminTab: "pending",
   settings: null,
   dashboard: null,
   allOptions: false,
@@ -115,10 +116,21 @@ function integrations() {
   const operations=state.realOperations?.operations || [];
   return '<section class="panel"><h2>Asaas · preparação do lançamento</h2><p>O painel mostra a configuração disponível. Marcas de configuração não substituem os testes e a análise dos documentos de aprovação.</p><div class="integration-list">'+Object.entries(checks).map(([k,v])=>'<div class="review-box integration-row"><strong>'+esc(labels[k]||k)+'</strong><span class="badge">'+(v?'CONFIGURADO':'PENDENTE')+'</span></div>').join('')+'</div><p>Eventos aguardando conciliação: '+(state.realOperations?.pendingEvents||0)+'</p><button class="btn secondary" data-action="asaas-refresh">Atualizar</button> <button class="btn secondary" data-action="asaas-replay">Reprocessar eventos pendentes</button><h3>Operações Asaas</h3>'+operations.map(o=>'<article class="review-box"><strong>'+esc(o.id)+'</strong><p>'+esc(realStatusLabel[o.status]||o.status)+' · Pix '+money(o.quote.pixAmount)+' · Cartão '+money(o.quote.totalCharge)+'</p><button class="btn secondary" data-action="asaas-reconcile" data-id="'+esc(o.id)+'">Conciliar com o Asaas</button>'+(['FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY'].includes(o.status)?'<form class="release-form"><input type="hidden" name="id" value="'+esc(o.id)+'"><label>Referência da revisão de identidade e antifraude<input name="reference" required minlength="10" maxlength="200" placeholder="Identificador do relatório verificado"></label><label class="check-label"><input type="checkbox" required><span>Conferi a identidade do pagador e a operação '+esc(o.id)+'. Autorizo solicitar Pix de '+money(o.quote.pixAmount)+' com o saldo da conta Asaas.</span></label><button class="btn" type="submit">Autorizar solicitação de Pix</button></form>':'')+'</article>').join('')+(operations.length?'':'<p>Nenhuma operação Asaas registrada.</p>')+'</section>';
 }
+function launchDraftPanel() {
+  const d=state.launchDraft||{value:{},revision:0};
+  return '<section class="panel"><h2>Pendências do lançamento</h2><p>Preencha aos poucos e salve. Campos vazios ficam pendentes. Os dados são privados e não alteram automaticamente a publicação, as tarifas ativas ou a liberação de pagamentos.</p><p>Não cole senhas, chaves de API ou documentos de clientes.</p><form id="launch-draft-form">'+launchGroups.map((g,i)=>'<details '+(i===0?'open':'')+'><summary>'+esc(g.title)+' · '+g.fields.filter(([k])=>d.value[k]!==undefined&&d.value[k]!==null&&d.value[k]!=='').length+'/'+g.fields.length+' informados</summary><div class="form-grid">'+g.fields.map(([k,label,type])=>'<div class="'+(['textarea','document'].includes(type)?'wide':'')+'"><label for="launch-'+k+'">'+esc(label)+'</label>'+(['textarea','document'].includes(type)?'<textarea id="launch-'+k+'" name="'+k+'" rows="'+(type==='document'?16:3)+'" maxlength="'+(type==='document'?20000:2000)+'">'+esc(d.value[k]??'')+'</textarea>':'<input id="launch-'+k+'" name="'+k+'" type="'+type+'" '+(type==='number'?'min="0" step="0.01"':'maxlength="250"')+' value="'+esc(d.value[k]??'')+'">')+'</div>').join('')+'</div></details>').join('')+'<button class="btn" type="submit">Salvar informações e continuar depois</button><p class="field-help">'+(d.updatedAt?'Último salvamento: '+date(d.updatedAt):'Ainda não salvo. Os dados iniciais vieram do documento e das decisões informadas.')+'</p></form></section>';
+}
+function adminTestPanel() {
+  const r=state.testResult;
+  return '<section class="panel"><h2>Testar a jornada completa</h2><div class="notice">Simulação administrativa. Não cobra cartão, não envia Pix e não consulta o Asaas. Funciona com saldo zero.</div><form id="admin-test-form"><div class="form-grid"><div><label>Valor Pix (R$)<input name="amount" inputmode="decimal" value="100,00" required></label></div><div><label>Parcelas<input name="installments" type="number" min="1" max="12" value="6" required></label></div><div class="wide"><label>Cenário<select name="scenario"><option value="approved">Cartão aprovado e Pix concluído</option><option value="zero_balance">Cartão aprovado, aguardando saldo</option><option value="declined">Cartão recusado</option><option value="review">Análise manual</option><option value="pix_failed">Falha no Pix</option></select></label></div></div><label class="check-label"><input type="checkbox" required><span>Quero executar uma simulação, sem movimentação de dinheiro.</span></label><button class="btn" type="submit">Executar teste</button></form>'+(r?'<article class="review-box"><h3>Resultado simulado</h3><p>'+esc(realStatusLabel[r.status]||statusLabel[r.status]||r.status)+'</p><p>Pix: '+money(r.quote.pixAmount)+' · Cartão: '+money(r.quote.totalCharge)+' · '+installmentMarkup(r.quote)+'</p><p>Lucro projetado: '+money(r.quote.profit)+' · Margem sobre cobrança: '+(r.quote.margin*100).toFixed(2)+'%</p><ol>'+r.timeline.map(t=>'<li>'+esc(realStatusLabel[t]||statusLabel[t]||t)+'</li>').join('')+'</ol><p class="field-help">Custos da configuração de referência. Não é comprovante financeiro nem validação de tarifas reais.</p></article>':'')+'</section>';
+}
+
 function admin() {
   if (!state.adminToken || !state.dashboard || !state.settings)
     return adminLogin();
   return `<div class="admin-top"><div><div class="eyebrow">CONTROLE DA OPERAÇÃO</div><h1>Visão do negócio.</h1></div><button class="btn secondary" data-action="admin-logout">Encerrar acesso</button></div><div class="tabs" role="tablist" aria-label="Administração">${[
+    ["pending", "Pendências"],
+    ["test", "Testar fluxo"],
     ["dashboard", "Visão geral"],
     ["pricing", "Preços"],
     ["integrations", "Integrações"],
@@ -129,7 +141,7 @@ function admin() {
     )
     .join(
       "",
-    )}</div>${state.adminTab === "dashboard" ? dashboard() : state.adminTab === "pricing" ? pricingAdmin() : integrations()}`;
+    )}</div>${state.adminTab === "dashboard" ? dashboard() : state.adminTab === "pricing" ? pricingAdmin() : state.adminTab === "pending" ? launchDraftPanel() : state.adminTab === "test" ? adminTestPanel() : integrations()}`;
 }
 function legal(type) {
   return '<article class="panel legal centered"><a class="back" href="#home">← Início</a><h1>'+(type==='privacy'?'Privacidade':'Termos de uso')+'</h1>'+(type==='privacy'?'<p>O site utiliza um cookie de sessão para vincular cotações e consultas ao navegador. Registros técnicos limitam tentativas e protegem o serviço.</p><p>Dados de cartão devem ser informados somente no checkout hospedado pelo Asaas. A confirmação de uma operação pode envolver dados de identificação e chave Pix, armazenados com proteção e utilizados para processamento e análise.</p><p>O cadastro de novas operações está indisponível enquanto são finalizados os dados do responsável, o canal de privacidade e as condições de tratamento e retenção.</p>':'<p>A disponibilidade de pagamentos depende da liberação do serviço. No momento, novas cobranças e transferências não estão disponíveis.</p><p>Antes de confirmar uma operação, deverão ser apresentados valor do Pix, total cobrado, parcelamento, custos e condições aplicáveis. A aprovação do cartão não significa que o Pix foi concluído.</p><p>O envio depende de confirmação pelo parceiro, verificações de identidade, saldo disponível e limites operacionais. As condições comerciais definitivas serão publicadas antes da contratação.</p>')+'</article>';
@@ -194,8 +206,9 @@ async function pollRealStatus(id) {
     realPollTimer = setTimeout(() => pollRealStatus(id), 4000);
 }
 function render(startPolling = true) {
-  const [route, queryString]=(location.hash.slice(1)||'home').split('?');
+  const [route, queryString]=(location.hash.slice(1)||(document.body?.dataset.admin==='true'?'admin':'home')).split('?');
   const params=new URLSearchParams(queryString||'');
+  if(route==='admin' && document.body?.dataset.admin!=='true') { location.href='./admin.html';return; }
   if(route==='real-confirm' && (!state.realQuote || !state.bootstrap?.paymentsEnabled)) return navigate('home');
   const views = {
     home,
@@ -233,8 +246,8 @@ async function loadAdmin() {
   await loadAsaasAdmin();
 }
 async function loadAsaasAdmin() {
-  const [r,o]=await Promise.all([api('real/admin/readiness',{admin:true}),api('real/admin/operations',{admin:true})]);
-  state.readiness=r;state.realOperations=o;
+  const [r,o,d]=await Promise.all([api('real/admin/readiness',{admin:true}),api('real/admin/operations',{admin:true}),api('real/admin/launch-draft',{admin:true})]);
+  state.readiness=r;state.realOperations=o;state.launchDraft=d;
 }
 document.addEventListener("click", async (event) => {
   const b = event.target.closest("[data-action]");
@@ -279,6 +292,13 @@ document.addEventListener("submit", async (event) => {
   button.textContent = "Aguarde…";
   const data = new FormData(form);
   try {
+    if(form.id==='launch-draft-form') {
+      const value={};for(const [k,,type] of launchGroups.flatMap(g=>g.fields)) {const raw=data.get(k);value[k]=type==='number'?(raw===''?null:Number(raw)):String(raw||'').trim();}
+      state.launchDraft=await api('real/admin/launch-draft',{method:'PUT',admin:true,body:{value,revision:state.launchDraft.revision}});render();notice('Informações salvas. Você pode continuar depois.');
+    }
+    if(form.id==='admin-test-form') {
+      state.testResult=await api('real/admin/test-flow',{method:'POST',admin:true,body:{pixAmount:parseAmount(data.get('amount')),installments:Number(data.get('installments')),scenario:data.get('scenario'),confirmed:true}});render();
+    }
     if(form.classList.contains('release-form')) {
       const op=state.realOperations.operations.find(o=>o.id===data.get('id'));
       const released=await api('real/admin/release',{method:'POST',admin:true,body:{id:op.id,pixAmount:op.quote.pixAmount,reviewReference:data.get('reference'),confirmed:true}});

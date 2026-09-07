@@ -109,3 +109,6 @@ export const asaasInbox = sqliteTable("asaas_inbox", {
   receivedAt: integer("received_at").notNull(),
   processedAt: integer("processed_at"),
 });
+export const launchDraft = sqliteTable('launch_draft', {
+  id:text('id').primaryKey(),value:text('value').notNull(),revision:integer('revision').notNull(),updatedAt:integer('updated_at').notNull(),
+});

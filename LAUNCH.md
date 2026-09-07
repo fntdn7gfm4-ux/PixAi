@@ -60,3 +60,8 @@ Hospedagem principal permanece Sites (.openai/hosting.json). wrangler.toml é al
 - https://docs.asaas.com/reference/recuperar-taxas-da-conta
 - https://docs.asaas.com/docs/webhook-para-cobrancas
 - https://docs.asaas.com/docs/mecanismo-para-validacao-de-saque-via-webhooks
+
+## Painel separado e testes administrativos
+
+Acesse /admin.html e autentique com ADMIN_TOKEN. A aba Pendências salva rascunhos parciais privados, com controle de versão, incluindo contatos, custos e minutas dos documentos. Preenchê-los não ativa pagamentos nem publica os textos automaticamente. A aba Testar fluxo executa cinco cenários simulados sem chamar o Asaas ou movimentar dinheiro, inclusive espera por saldo zero.
+
