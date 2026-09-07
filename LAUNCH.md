@@ -2,6 +2,8 @@
 
 Estado: integração técnica em preparação. A publicação continua com `PAYMENTS_ENABLED=false`; não confundir credencial configurada com operação homologada.
 
+Interface pública: referências à demonstração e seus fluxos foram retirados. A página informa a indisponibilidade de novos pagamentos até a liberação. Webhook de eventos criado no Asaas e habilitado para este site; autorização de saques ainda requer configuração/homologação separada.
+
 ## Decisões do responsável
 
 - Capital próprio para antecipar o Pix, sem contratar antecipação automática do Asaas.
