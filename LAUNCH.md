@@ -53,6 +53,14 @@ Ambientes Asaas e APP_ENV devem corresponder para criar cobranças. Requisitos e
 
 Hospedagem principal permanece Sites (.openai/hosting.json). wrangler.toml é alternativa ainda não provisionada e não deve ser usada para este deploy.
 
+## Preparação InfinitePay
+
+O Checkout Integrado InfinitePay também está preparado como alternativa de recebimento. A InfiniteTag informada pelo responsável é `lucas-banza` (sem o prefixo `$`, como exigido pela API). O painel administrativo permite registrar a conferência de tarifas, o plano de recebimento e o prazo de atendimento antes de habilitar a integração.
+
+O servidor cria links com `order_nsu`, `redirect_url` e `webhook_url`, mas nunca confia isoladamente no retorno do navegador ou no corpo do webhook: a confirmação é refeita em `/payment_check` e deve coincidir com o pedido e o valor registrados. O Pix permanece manual e só pode ser marcado como enviado após o recebimento líquido ser conferido pelo operador.
+
+`INFINITEPAY_ENABLED=false` continua obrigatório até a revisão comercial, operacional e jurídica. A documentação pública não oferece um ambiente sandbox separado nem uma API de transferência Pix neste fluxo; por isso, testes de pagamento devem usar os recursos oficialmente disponibilizados pela conta, e o envio ao destinatário não é automatizado.
+
 ## Documentação oficial
 
 - https://docs.asaas.com/docs/checkout-para-cart%C3%A3o-de-cr%C3%A9dito

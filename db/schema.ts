@@ -112,3 +112,29 @@ export const asaasInbox = sqliteTable("asaas_inbox", {
 export const launchDraft = sqliteTable('launch_draft', {
   id:text('id').primaryKey(),value:text('value').notNull(),revision:integer('revision').notNull(),updatedAt:integer('updated_at').notNull(),
 });
+export const infiniteOperations = sqliteTable(
+  "infinite_operations",
+  {
+    id: text("id").primaryKey(),
+    idempotencyKey: text("idempotency_key").notNull().unique(),
+    requestHash: text("request_hash").notNull(),
+    handle: text("handle").notNull(),
+    status: text("status").notNull(),
+    quote: text("quote").notNull(),
+    recipientEncrypted: text("recipient_encrypted").notNull(),
+    accessDigest: text("access_digest").notNull(),
+    checkoutUrl: text("checkout_url"),
+    transactionNsu: text("transaction_nsu").unique(),
+    invoiceSlug: text("invoice_slug"),
+    payment: text("payment"),
+    operator: text("operator"),
+    settlementReference: text("settlement_reference"),
+    transferReference: text("transfer_reference"),
+    receivedAt: integer("received_at"),
+    sentAt: integer("sent_at"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    index("idx_infinite_operations_status_created").on(t.status, t.createdAt),
+  ],
+);
