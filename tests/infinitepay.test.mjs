@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {checkoutUrl,verifiedPayment} from '../server/infinitepay.mjs';
+import {checkoutUrl,infiniteRequest,verifiedPayment} from '../server/infinitepay.mjs';
 import {harness} from './helpers.mjs';
 
 const setup=()=>{
@@ -19,6 +19,24 @@ test('valida URLs e confirma pagamentos Pix ou cartão retornados pela InfiniteP
   assert.equal(verifiedPayment({success:true,paid:true,amount:1500,paid_amount:1510,installments:2,capture_method:'credit_card'},1500),true);
   assert.equal(verifiedPayment({success:true,paid:true,amount:1500,paid_amount:1500,installments:1,capture_method:'pix'},1500),true);
   assert.equal(verifiedPayment({success:true,paid:true,amount:1499,paid_amount:1510,installments:2,capture_method:'credit_card'},1500),false);
+});
+
+test('usa o endpoint compatível quando o endpoint principal da InfinitePay falha',async()=>{
+  const oldFetch=globalThis.fetch;
+  const urls=[];
+  globalThis.fetch=async url=>{
+    urls.push(String(url));
+    if(urls.length===1) return new Response('{"error":"indisponível"}',{status:503});
+    return new Response('{"url":"https://checkout.infinitepay.io/lucas-banza?lenc=teste"}',{status:200});
+  };
+  try {
+    const result=await infiniteRequest('/links',{handle:'lucas-banza',items:[{quantity:1,price:2000,description:'Opção 1'}]});
+    assert.equal(result.url,'https://checkout.infinitepay.io/lucas-banza?lenc=teste');
+    assert.deepEqual(urls,[
+      'https://api.checkout.infinitepay.io/links',
+      'https://api.infinitepay.io/invoices/public/checkout/links',
+    ]);
+  } finally { globalThis.fetch=oldFetch; }
 });
 
 test('fluxo de serviços limita valores e cria checkout pelo valor exato',async()=>{

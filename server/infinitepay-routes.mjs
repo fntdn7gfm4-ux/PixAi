@@ -214,7 +214,8 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         });
         const url=checkoutUrl(result.url);
         await run(db,"UPDATE infinite_operations SET checkout_url=?,status=CASE WHEN status='CHECKOUT_CREATING' THEN 'AWAITING_PAYMENT' ELSE status END WHERE id=?",url,id).run();
-      } catch {
+      } catch(error) {
+        console.error('InfinitePay checkout failed',{orderNsu:id,diagnostic:error?.diagnostic||error?.name||'unknown'});
         await run(db,"UPDATE infinite_operations SET status='CHECKOUT_UNCERTAIN' WHERE id=? AND status='CHECKOUT_CREATING'",id).run();
       }
       await auditRow(db,'INFINITEPAY_CHECKOUT_REQUESTED',id).run();

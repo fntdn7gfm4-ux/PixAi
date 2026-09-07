@@ -1,12 +1,28 @@
 // Official contract: https://www.infinitepay.io/checkout-documentacao
-const origin = 'https://api.checkout.infinitepay.io';
+// The second origin is the compatibility endpoint still maintained by InfinitePay.
+const origins = [
+  'https://api.checkout.infinitepay.io',
+  'https://api.infinitepay.io/invoices/public/checkout',
+];
 export async function infiniteRequest(path, body) {
-  const response = await fetch(origin + path, {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(body), signal: AbortSignal.timeout(12000), redirect:'error',
-  });
-  if (!response.ok) throw Error('InfinitePay indisponível para esta solicitação.');
-  return response.json();
+  const failures=[];
+  for(const origin of origins) {
+    try {
+      const response = await fetch(origin + path, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify(body),
+        signal:AbortSignal.timeout(12000),
+      });
+      if(response.ok) return await response.json();
+      failures.push(`${new URL(origin).hostname}:HTTP_${response.status}`);
+    } catch(error) {
+      failures.push(`${new URL(origin).hostname}:${error?.name||'FETCH_ERROR'}`);
+    }
+  }
+  const error=Error('InfinitePay indisponível para esta solicitação.');
+  error.diagnostic=failures.join(',');
+  throw error;
 }
 export function checkoutUrl(value) {
   const u = new URL(value);
