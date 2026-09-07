@@ -59,7 +59,9 @@ O Checkout Integrado InfinitePay também está preparado como alternativa de rec
 
 O servidor cria links com `order_nsu`, `redirect_url` e `webhook_url`, mas nunca confia isoladamente no retorno do navegador ou no corpo do webhook: a confirmação é refeita em `/payment_check` e deve coincidir com o pedido e o valor registrados. O Pix permanece manual e só pode ser marcado como enviado após o recebimento líquido ser conferido pelo operador.
 
-`INFINITEPAY_ENABLED=false` continua obrigatório até a revisão comercial, operacional e jurídica. A documentação pública não oferece um ambiente sandbox separado nem uma API de transferência Pix neste fluxo; por isso, testes de pagamento devem usar os recursos oficialmente disponibilizados pela conta, e o envio ao destinatário não é automatizado.
+O teste controlado InfinitePay usa a referência informada `IP-2314a3254x83`, recebimento na hora, Pix entre R$ 20 e R$ 250 e código de acesso privado. A estimativa provisória de custo é 15,5% do valor-base, derivada do exemplo em que um item de R$ 200 resulta em R$ 169 líquidos; o preço preserva margem mínima de 30% sobre o valor-base. Para um Pix de R$ 200, a base calculada é R$ 367,90, antes de eventual acréscimo de parcelamento feito pela InfinitePay.
+
+A documentação pública não oferece um ambiente sandbox separado nem uma API de transferência Pix neste fluxo; por isso, o primeiro pagamento deve ser controlado, com recursos próprios, e o Pix ao destinatário permanece manual. O operador só pode liberá-lo no painel após conferir que o valor líquido recebido cobre o Pix e o lucro projetado.
 
 ## Documentação oficial
 

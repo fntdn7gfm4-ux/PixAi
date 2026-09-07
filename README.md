@@ -1,6 +1,6 @@
 # PixAI / Pixaí — plataforma de avaliação
 
-**Preparação de pagamentos:** adaptador Asaas e Checkout Integrado InfinitePay (`lucas-banza`) preparados com conciliação e painel operacional. Novas cobranças continuam desativadas. Leia [LAUNCH.md](LAUNCH.md) para o estado atual, decisões de capital, margem e pendências de lançamento. A descrição da demonstração abaixo refere-se ao fluxo sandbox, que continua disponível.
+**Teste controlado:** Checkout Integrado InfinitePay (`lucas-banza`) preparado com acesso privado por código, valores de R$ 20 a R$ 250, margem mínima de 30%, confirmação por `payment_check` e envio manual do Pix após conferência do recebimento. Leia [LAUNCH.md](LAUNCH.md) antes de testar.
 
 Nova experiência web para Pix pago no cartão, sem conta ou senha tradicional.
 

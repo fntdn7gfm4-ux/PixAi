@@ -7,7 +7,12 @@ import {constantEqual,sha256} from './security.mjs';
 export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limited,settings}) {
   const config = async(db,env={})=>{
     const row=await first(db,"SELECT * FROM settings WHERE id='infinitepay'");
-    return row?{value:JSON.parse(row.value),revision:row.revision}:{value:{handle:env.INFINITEPAY_HANDLE||'',pricingReference:'',receivingPlan:'',serviceDeadline:'',enabled:false},revision:0};
+    return row?{value:JSON.parse(row.value),revision:row.revision}:{value:{handle:env.INFINITEPAY_HANDLE||'',pricingReference:env.INFINITEPAY_PRICING_REFERENCE||'',receivingPlan:env.INFINITEPAY_RECEIVING_PLAN||'',serviceDeadline:env.INFINITEPAY_SERVICE_DEADLINE||'',enabled:env.INFINITEPAY_ENABLED==='true'&&!!env.INFINITEPAY_APPROVAL_REF},revision:0};
+  };
+  const integerEnv=(env,key,fallback)=>/^\d+$/.test(env[key]||'')?Number(env[key]):fallback;
+  const providerSettings=async(db,env)=>{
+    const base=await settings(db),rate=integerEnv(env,'INFINITEPAY_GATEWAY_RATE_PPM',155000);
+    return {...base,value:{...base.value,minAmount:integerEnv(env,'INFINITEPAY_MIN_AMOUNT_CENTS',2000),maxAmount:integerEnv(env,'INFINITEPAY_MAX_AMOUNT_CENTS',25000),minimumProfitRate:integerEnv(env,'INFINITEPAY_MIN_MARGIN_PPM',300000),gatewayRates:Array(12).fill(rate),gatewayFixedFee:0,installments:Array.from({length:12},(_,i)=>i+1)}};
   };
   const view = r=>({id:r.id,status:r.status,quote:JSON.parse(r.quote),checkoutUrl:r.checkout_url,
     createdAt:r.created_at,payment:r.payment?JSON.parse(r.payment):null,
@@ -31,6 +36,11 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     if(!env.DB) fail(503,'Armazenamento indisponível.');
     const db=env.DB;
     await limited(db,'infinite:'+await sha256(request.headers.get('CF-Connecting-IP')||'local'),120);
+    const currentConfig=await config(db,env),enabled=env.INFINITEPAY_ENABLED==='true'&&currentConfig.value.enabled;
+    if(path==='/api/infinitepay/bootstrap' && request.method==='GET') {
+      const s=await providerSettings(db,env);
+      return json({provider:'infinitepay',paymentsEnabled:enabled,minAmount:s.value.minAmount,maxAmount:s.value.maxAmount,handle:currentConfig.value.handle});
+    }
     if(path==='/api/infinitepay/webhook' && request.method==='POST') {
       const body=await readBody(request);
       if(!textField(body.order_nsu,1,100)) fail(400,'Pedido inválido.');
@@ -45,12 +55,16 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       if(!id||token.length<32) fail(404,'Operação não encontrada.');
       const row=await first(db,'SELECT * FROM infinite_operations WHERE id=?',id);
       if(!row || !await constantEqual(await sha256(token),row.access_digest)) fail(404,'Operação não encontrada.');
-      return json({id:row.id,status:row.status,pixAmount:JSON.parse(row.quote).pixAmount,baseCharge:JSON.parse(row.quote).totalCharge,receivedAt:row.received_at,sentAt:row.sent_at});
+      return json({id:row.id,status:row.status,quote:JSON.parse(row.quote),payment:row.payment?JSON.parse(row.payment):null,receivedAt:row.received_at,sentAt:row.sent_at});
     }
-    if(!path.startsWith('/api/infinitepay/admin/')) fail(404,'Recurso não encontrado.');
-    const token=request.headers.get('authorization')?.replace(/^Bearer /,'')||'';
-    if(!env.ADMIN_TOKEN||env.ADMIN_TOKEN.length<32||!await constantEqual(token,env.ADMIN_TOKEN)) fail(401,'Acesso administrativo obrigatório.');
+    const isAdmin=path.startsWith('/api/infinitepay/admin/');
+    if(!isAdmin&&!['/api/infinitepay/quote','/api/infinitepay/create'].includes(path)) fail(404,'Recurso não encontrado.');
+    if(isAdmin) {
+      const token=request.headers.get('authorization')?.replace(/^Bearer /,'')||'';
+      if(!env.ADMIN_TOKEN||env.ADMIN_TOKEN.length<32||!await constantEqual(token,env.ADMIN_TOKEN)) fail(401,'Acesso administrativo obrigatório.');
+    }
     if(request.method!=='GET' && request.headers.get('origin')!==new URL(request.url).origin) fail(403,'Origem obrigatória.');
+    if(!isAdmin&&env.INFINITEPAY_TEST_MODE==='true'&&(!env.INFINITEPAY_TEST_ACCESS_CODE||!await constantEqual(request.headers.get('x-test-access-code')||'',env.INFINITEPAY_TEST_ACCESS_CODE))) fail(401,'Código de acesso ao teste inválido.');
     if(path.endsWith('/config')) {
       if(request.method==='GET') return json({...await config(db,env),serverEnabled:env.INFINITEPAY_ENABLED==='true'});
       if(request.method==='PUT') {
@@ -81,11 +95,12 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     }
     if(path.endsWith('/quote')&&request.method==='POST') {
       const body=await readBody(request);only(body,['pixAmount']);
-      const s=await settings(db);
+      if(!enabled&&!isAdmin) fail(503,'Cobranças InfinitePay ainda não ativadas.');
+      const s=await providerSettings(db,env);
       // Checkout chooses installments; charge a base covering the highest configured card cost.
       const maxRate=Math.max(...s.value.gatewayRates);
       let quote;try {quote=launchPrice(body.pixAmount,1,{...s.value,gatewayRates:s.value.gatewayRates.map(()=>maxRate)});} catch(e){fail(400,e.message);}
-      return json({quote,pricingRevision:s.revision,note:'Valor base. Parcelas e eventuais acréscimos são definidos no checkout InfinitePay.'});
+      return json({quote:{...quote,installments:1,installmentAmount:quote.totalCharge},pricingRevision:s.revision,note:'Valor base. Parcelas e eventuais acréscimos são definidos no checkout InfinitePay.'});
     }
     if(path.endsWith('/create')&&request.method==='POST') {
       const c=await config(db,env);
@@ -97,7 +112,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       const hash=await sha256(JSON.stringify(body));
       let old=await first(db,'SELECT * FROM infinite_operations WHERE idempotency_key=?',key);
       if(old) {if(old.request_hash!==hash) fail(409,'Tentativa divergente.');return json(view(old));}
-      const s=await settings(db),maxRate=Math.max(...s.value.gatewayRates);
+      const s=await providerSettings(db,env),maxRate=Math.max(...s.value.gatewayRates);
       let q;try {q=launchPrice(body.pixAmount,1,{...s.value,gatewayRates:s.value.gatewayRates.map(()=>maxRate)});}catch(e){fail(400,e.message);}
       if(s.revision!==body.pricingRevision||q.totalCharge!==body.totalCharge) fail(409,'Preço alterado. Calcule novamente.');
       const id='IP-'+crypto.randomUUID(),access=crypto.randomUUID()+crypto.randomUUID(),now=Date.now();
@@ -113,7 +128,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         await run(db,"UPDATE infinite_operations SET status='CHECKOUT_UNCERTAIN' WHERE id=? AND status='CHECKOUT_CREATING'",id).run();
       }
       await auditRow(db,'INFINITEPAY_CHECKOUT_REQUESTED',id).run();
-      return json(view(await first(db,'SELECT * FROM infinite_operations WHERE id=?',id)),201);
+      return json({...view(await first(db,'SELECT * FROM infinite_operations WHERE id=?',id)),accessToken:access},201);
     }
     if(path.endsWith('/check')&&request.method==='POST') {
       const body=await readBody(request);only(body,['id','transaction_nsu','invoice_slug']);
