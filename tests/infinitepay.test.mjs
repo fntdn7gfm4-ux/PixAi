@@ -34,16 +34,16 @@ test('fluxo de serviços limita valores e cria checkout pelo valor exato',async(
     return new Response(JSON.stringify({url:'https://checkout.infinitepay.com.br/lucas-banza?lenc=teste'}),{status:200,headers:{'content-type':'application/json'}});
   };
   try {
-    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:20000,totalCharge:20000,productId:'opcao-5',serviceDescription:'Consultoria estratégica',name:'Pessoa de Teste',email:'pessoa@example.com',confirmed:true}});
+    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:20000,totalCharge:20000,productId:'opcao-5',name:'Pessoa de Teste',email:'pessoa@example.com',cpf:'529.982.247-25',confirmed:true}});
     assert.equal(created.status,201);
     assert.match(created.data.checkoutUrl,/^https:\/\/checkout\.infinitepay\.com\.br/);
     assert.ok(created.data.accessToken.length>=32);
     assert.equal(payload.handle,'lucas-banza');
     assert.equal(payload.items[0].price,20000);
-    assert.match(payload.items[0].description,/Opção 5.*Consultoria estratégica/);
+    assert.match(payload.items[0].description,/Opção 5.*valor personalizado/);
     assert.deepEqual(payload.customer,{name:'Pessoa de Teste',email:'pessoa@example.com'});
     const stored=h.sqlite.prepare('SELECT recipient_encrypted FROM infinite_operations').get().recipient_encrypted;
-    assert.doesNotMatch(stored,/pessoa@example\.com|Pessoa de Teste/);
+    assert.doesNotMatch(stored,/pessoa@example\.com|Pessoa de Teste|52998224725/);
   } finally {globalThis.fetch=oldFetch;}
 });
 
@@ -58,7 +58,7 @@ test('retorno autenticado consulta a InfinitePay e conclui o pagamento',async()=
     return new Response(JSON.stringify({success:true,paid:true,amount:8500,paid_amount:8500,installments:1,capture_method:'pix'}),{status:200});
   };
   try {
-    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:8500,totalCharge:8500,productId:'opcao-5',serviceDescription:'Manutenção',name:'Cliente Teste',email:'cliente@example.com',confirmed:true}});
+    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:8500,totalCharge:8500,productId:'opcao-5',name:'Cliente Teste',email:'cliente@example.com',cpf:'52998224725',confirmed:true}});
     ({id,accessToken}=created.data);
     const confirmed=await c('infinitepay/confirm',{method:'POST',headers:{'x-operation-token':accessToken},body:{id,transaction_nsu:'tx-1',invoice_slug:'inv-1'}});
     assert.equal(confirmed.status,200);

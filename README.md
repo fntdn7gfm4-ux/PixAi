@@ -1,6 +1,6 @@
 # PixAI — portal de pagamento de serviços
 
-Aplicação web para cobrar serviços previamente orçados ou contratados. O cliente informa referência, descrição, valor, nome e e-mail e conclui o pagamento no checkout hospedado da InfinitePay.
+Aplicação web para cobrar serviços previamente orçados ou contratados. O cliente seleciona uma opção, informa nome, e-mail e CPF — além do valor quando escolher a opção personalizada — e conclui o pagamento no checkout hospedado da InfinitePay.
 
 ## Fluxo em produção
 

@@ -4,7 +4,7 @@ Versão de 7 de setembro de 2026.
 
 ## 1. Dados tratados
 
-O portal coleta nome, e-mail, referência, descrição e valor do serviço, além de identificadores técnicos da operação, para criar, identificar e conciliar pagamentos, prestar atendimento, prevenir abuso e cumprir obrigações legais.
+O portal coleta nome, e-mail, CPF, opção selecionada e valor, além de identificadores técnicos da operação, para criar, identificar e conciliar pagamentos, entregar o serviço, prestar atendimento, prevenir abuso e cumprir obrigações legais.
 
 ## 2. Pagamento
 

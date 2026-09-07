@@ -12,7 +12,7 @@
 
 ## Jornada
 
-1. Cliente informa referência, descrição e valor do serviço, nome e e-mail.
+1. Cliente seleciona uma opção e informa nome, e-mail e CPF; a quinta opção também solicita o valor personalizado.
 2. O servidor recalcula e valida o limite; não aplica margem ou tarifa sobre o valor.
 3. O servidor cria um link do Checkout Integrado InfinitePay com um identificador único.
 4. Cliente escolhe Pix ou cartão e eventuais parcelas no checkout da InfinitePay.

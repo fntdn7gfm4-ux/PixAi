@@ -4,7 +4,7 @@ Versão de 7 de setembro de 2026.
 
 ## 1. Finalidade
 
-O portal PixAI é usado para pagar serviços previamente solicitados, orçados ou contratados. O cliente deve conferir a referência, a descrição e o valor antes de continuar.
+O portal PixAI é usado para pagar serviços previamente solicitados, orçados ou contratados. O cliente deve conferir a opção, o valor, o nome, o e-mail e o CPF antes de continuar.
 
 ## 2. Pagamento
 

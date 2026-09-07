@@ -1,6 +1,7 @@
 import {infiniteRequest,checkoutUrl,verifiedPayment} from './infinitepay.mjs';
 import {encryptPII,decryptPII} from './pii.mjs';
 import {constantEqual,sha256} from './security.mjs';
+import {isValidCPF,normalizeCPF} from './cpf.mjs';
 
 export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limited}) {
   const text=(value,min=1,max=200)=>typeof value==='string'&&value.trim().length>=min&&value.trim().length<=max;
@@ -11,9 +12,9 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     title:'Pague seu serviço com clareza e segurança.',
     subtitle:'Informe os dados do seu orçamento e siga para o ambiente de pagamento da InfinitePay.',
     formTitle:'Dados do pagamento',
-    formHelp:'Use a descrição, a referência e o valor que você recebeu no orçamento ou contrato.',
-    descriptionLabel:'Serviço contratado',descriptionPlaceholder:'Ex.: consultoria, manutenção ou criação de conteúdo',
-    amountLabel:'Valor',nameLabel:'Nome do cliente',emailLabel:'E-mail',buttonLabel:'Continuar para o pagamento',
+    formHelp:'Selecione uma opção e informe os dados do titular que receberá o serviço.',
+    amountLabel:'Valor personalizado',nameLabel:'Nome do cliente',emailLabel:'E-mail',cpfLabel:'CPF',
+    cpfNotice:'O serviço contratado será enviado apenas para o CPF do titular informado neste campo.',buttonLabel:'Continuar para o pagamento',
   };
   const defaultProducts=[
     {id:'opcao-1',name:'Opção 1',description:'Serviço contratado — opção 1',price:2000,active:true,customPrice:false},
@@ -25,13 +26,16 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
   const config=async(db,env={})=>{
     const row=await first(db,"SELECT * FROM settings WHERE id='infinitepay'");
     const saved=row?JSON.parse(row.value):{};
+    const content={...defaultContent,...(saved.content||{})};
+    delete content.descriptionLabel;delete content.descriptionPlaceholder;delete content.referenceLabel;delete content.referencePlaceholder;
+    if(/referência|descrição/i.test(content.formHelp)) content.formHelp=defaultContent.formHelp;
     return {value:{
       handle:saved.handle||env.INFINITEPAY_HANDLE||'',
-      serviceLabel:saved.serviceLabel||env.INFINITEPAY_SERVICE_LABEL||'Serviços profissionais',
+      serviceLabel:!saved.serviceLabel||saved.serviceLabel==='Serviços profissionais'?'Opção selecionada':saved.serviceLabel,
       enabled:saved.enabled??(env.INFINITEPAY_ENABLED==='true'),
       minAmount:Number.isSafeInteger(saved.minAmount)?saved.minAmount:integerEnv(env,'INFINITEPAY_MIN_AMOUNT_CENTS',2000),
       maxAmount:Number.isSafeInteger(saved.maxAmount)?saved.maxAmount:integerEnv(env,'INFINITEPAY_MAX_AMOUNT_CENTS',25000),
-      content:{...defaultContent,...(saved.content||{})},
+      content,
       products:Array.isArray(saved.products)?saved.products:defaultProducts,
     },revision:row?.revision||0};
   };
@@ -174,16 +178,16 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     }
     if(path.endsWith('/create')&&request.method==='POST') {
       if(!enabled) fail(503,'Cobranças InfinitePay ainda não ativadas.');
-      const body=await readBody(request);only(body,['amount','totalCharge','productId','serviceDescription','name','email','confirmed']);
+      const body=await readBody(request);only(body,['amount','totalCharge','productId','name','email','cpf','confirmed']);
       const {minAmount,maxAmount}=current.value;
       const product=current.value.products.find(item=>item.id===body.productId&&item.active);
       if(current.value.products.some(item=>item.active)&&!product) fail(400,'Selecione um produto ou serviço disponível.');
       if(product&&!product.customPrice&&body.amount!==product.price) fail(409,'O preço do produto foi alterado. Atualize a página.');
       if(body.confirmed!==true||!Number.isSafeInteger(body.amount)||body.amount<minAmount||body.amount>maxAmount||body.totalCharge!==body.amount) fail(400,'Confira o valor e a confirmação.');
-      if(!text(body.serviceDescription,3,160)||!text(body.name,3,140)||!email(body.email)) fail(400,'Preencha serviço, nome e e-mail válidos.');
+      if(!text(body.name,3,140)||!email(body.email)||!isValidCPF(body.cpf)) fail(400,'Preencha nome, e-mail e CPF válidos.');
       if(!/^https:\/\/[^/]+$/.test(env.PUBLIC_BASE_URL||'')||!env.PII_ENCRYPTION_KEY) fail(503,'Endereço ou criptografia pendentes.');
       const key=request.headers.get('idempotency-key')||'';
-      if(!/^[A-Za-z0-9-]{16,100}$/.test(key)) fail(400,'Identificador da tentativa obrigatório.');
+      if(!/^[A-Za-z0-9-]{16,100}$/.test(key)) fail(400,'Não foi possível iniciar o pagamento. Atualize a página e tente novamente.');
       const hash=await sha256(JSON.stringify(body));
       let old=await first(db,'SELECT * FROM infinite_operations WHERE idempotency_key=?',key);
       if(old) {
@@ -191,8 +195,8 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         return json(view(old));
       }
       const id='SV-'+crypto.randomUUID(),access=crypto.randomUUID()+crypto.randomUUID(),now=Date.now();
-      const quote={serviceAmount:body.amount,totalCharge:body.amount,productId:product?.id||null,productName:product?.name||current.value.serviceLabel,serviceDescription:body.serviceDescription.trim()};
-      const detail=await encryptPII(env,JSON.stringify({name:body.name.trim(),email:body.email.trim().toLowerCase(),productName:quote.productName,serviceDescription:quote.serviceDescription}));
+      const quote={serviceAmount:body.amount,totalCharge:body.amount,productId:product?.id||null,productName:product?.name||current.value.serviceLabel,serviceDescription:product?.description||product?.name||current.value.serviceLabel};
+      const detail=await encryptPII(env,JSON.stringify({name:body.name.trim(),email:body.email.trim().toLowerCase(),cpf:normalizeCPF(body.cpf),productName:quote.productName,serviceDescription:quote.serviceDescription}));
       const inserted=await run(db,"INSERT OR IGNORE INTO infinite_operations(id,idempotency_key,request_hash,handle,status,quote,recipient_encrypted,access_digest,created_at) VALUES (?,?,?,?,'CHECKOUT_CREATING',?,?,?,?)",id,key,hash,current.value.handle,JSON.stringify(quote),detail,await sha256(access),now).run();
       if(!inserted.meta.changes) {
         old=await first(db,'SELECT * FROM infinite_operations WHERE idempotency_key=?',key);

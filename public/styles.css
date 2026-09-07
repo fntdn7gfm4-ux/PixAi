@@ -607,6 +607,9 @@ main:focus {
   background: #e9f8f0;
   color: #23684a;
 }
+.cpf-notice {
+  margin: 9px 0 0;
+}
 .options {
   display: grid;
   gap: 10px;

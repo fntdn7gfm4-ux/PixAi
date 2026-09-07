@@ -6,7 +6,9 @@ test('interface pública apresenta somente o pagamento de serviços pela Infinit
   const script=readFileSync('public/app.js','utf8');
   const html=readFileSync('public/index.html','utf8');
   assert.match(script,/Pague seu serviço com clareza e segurança/);
-  assert.match(script,/Serviço contratado/);
+  assert.match(script,/Opção selecionada/);
+  assert.match(script,/CPF do titular informado neste campo/);
+  assert.match(script,/Idempotency-Key/);
   assert.match(script,/infinitepay\/create/);
   assert.match(script,/Produtos e serviços/);
   assert.match(script,/Textos e campos da página/);
@@ -14,6 +16,7 @@ test('interface pública apresenta somente o pagamento de serviços pela Infinit
   assert.match(html,/Checkout InfinitePay/);
   assert.match(html,/pixai-popup\.png/);
   assert.doesNotMatch(script,/Referência do serviço|referencePlaceholder/);
+  assert.doesNotMatch(script,/descriptionLabel|descriptionPlaceholder/);
   assert.match(script,/Confirmar entrega/);
   assert.doesNotMatch(script+html,/Fazer um Pix|solicitação de Pix|checkout Asaas|capital próprio|margem de 30%/i);
 });

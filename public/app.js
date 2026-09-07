@@ -1,7 +1,7 @@
 const main=document.querySelector('#main');
 const notice=document.querySelector('#notification');
 const adminPage=document.body?.dataset?.admin==='true';
-let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Serviços profissionais',products:[],content:{}};
+let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Opção selecionada',products:[],content:{}};
 let adminToken=sessionStorage.getItem('pixai-admin-token')||'';
 
 const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -19,11 +19,12 @@ function alertUser(message) {
   clearTimeout(alertUser.timer);
   alertUser.timer=setTimeout(()=>notice.textContent='',6500);
 }
-async function api(path,{method='GET',body,admin=false,operationToken}={}) {
+async function api(path,{method='GET',body,admin=false,operationToken,idempotencyKey}={}) {
   const headers={'Accept':'application/json'};
   if(body) headers['Content-Type']='application/json';
   if(admin) headers.Authorization='Bearer '+adminToken;
   if(operationToken) headers['X-Operation-Token']=operationToken;
+  if(idempotencyKey) headers['Idempotency-Key']=idempotencyKey;
   const response=await fetch('/api/'+path,{method,headers,body:body?JSON.stringify(body):undefined});
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw Error(data.error||'Não foi possível concluir esta ação.');
@@ -37,9 +38,8 @@ function setEnv() {
 function home() {
   const content={
     eyebrow:'Checkout seguro pela InfinitePay',title:'Pague seu serviço com clareza e segurança.',subtitle:'Informe os dados do seu orçamento e siga para o ambiente de pagamento da InfinitePay.',
-    formTitle:'Dados do pagamento',formHelp:'Use a descrição, a referência e o valor que você recebeu no orçamento ou contrato.',
-    descriptionLabel:'Serviço contratado',descriptionPlaceholder:'Ex.: consultoria, manutenção ou criação de conteúdo',
-    amountLabel:'Valor',nameLabel:'Nome do cliente',emailLabel:'E-mail',buttonLabel:'Continuar para o pagamento',...bootstrap.content,
+    formTitle:'Dados do pagamento',formHelp:'Selecione uma opção e informe os dados do titular que receberá o serviço.',
+    amountLabel:'Valor personalizado',nameLabel:'Nome do cliente',emailLabel:'E-mail',cpfLabel:'CPF',cpfNotice:'O serviço contratado será enviado apenas para o CPF do titular informado neste campo.',buttonLabel:'Continuar para o pagamento',...bootstrap.content,
   };
   const products=bootstrap.products||[];
   main.innerHTML=`
@@ -52,13 +52,13 @@ function home() {
         <h2>${esc(content.formTitle)}</h2><p>${esc(content.formHelp)}</p>
         <form id="service-form">
           <div class="form-grid">
-            ${products.length?`<div class="wide"><label for="product">${esc(bootstrap.serviceLabel)}</label><select id="product" name="productId" required><option value="">Selecione</option>${products.map(product=>`<option value="${esc(product.id)}">${esc(product.name)}${product.customPrice?'':' — '+money(product.price)}</option>`).join('')}</select></div>`:''}
-            <div><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" required placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p></div>
-            <div class="wide"><label for="description">${esc(content.descriptionLabel)}</label><input id="description" name="description" maxlength="160" required placeholder="${esc(content.descriptionPlaceholder)}"></div>
+            ${products.length?`<div class="wide"><label for="product">${esc(bootstrap.serviceLabel)}</label><select id="product" name="productId" required><option value="">Selecione</option>${products.map(product=>`<option value="${esc(product.id)}">${esc(product.name)}${product.customPrice?' — valor personalizado':' — '+money(product.price)}</option>`).join('')}</select></div>`:''}
+            <div class="wide" id="custom-amount" hidden><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p></div>
             <div><label for="name">${esc(content.nameLabel)}</label><input id="name" name="name" autocomplete="name" maxlength="140" required></div>
             <div><label for="email">${esc(content.emailLabel)}</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" required></div>
+            <div class="wide"><label for="cpf">${esc(content.cpfLabel)}</label><input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" required><p class="notice cpf-notice">${esc(content.cpfNotice)}</p></div>
           </div>
-          <label class="check-label"><input name="confirmed" type="checkbox" required><span>Confirmo que a referência, a descrição e o valor correspondem ao serviço solicitado e aceito os <a href="#terms"><u>Termos de uso</u></a> e a <a href="#privacy"><u>Política de privacidade</u></a>.</span></label>
+          <p class="fine-print">Ao continuar, você confirma os dados informados e aceita os <a href="#terms"><u>Termos de uso</u></a> e a <a href="#privacy"><u>Política de privacidade</u></a>.</p>
           <button class="btn full" ${bootstrap.paymentsEnabled?'':'disabled'}>${bootstrap.paymentsEnabled?esc(content.buttonLabel)+' →':'Pagamentos indisponíveis'}</button>
         </form>
       </section>
@@ -80,11 +80,12 @@ function home() {
     const product=products.find(item=>item.id===event.currentTarget.value);
     const form=document.querySelector('#service-form');
     if(!product||!form) return;
-    form.elements.namedItem('description').value=product.description;
     const amount=form.elements.namedItem('amount');
-    amount.readOnly=!product.customPrice;
+    document.querySelector('#custom-amount').hidden=!product.customPrice;
+    amount.required=product.customPrice;
     amount.value=product.customPrice?'':(product.price/100).toFixed(2).replace('.',',');
   });
+  document.querySelector('#cpf')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');});
 }
 
 async function startPayment(event) {
@@ -99,8 +100,8 @@ async function startPayment(event) {
     const key=crypto.randomUUID();
     const result=await api('infinitepay/create',{method:'POST',body:{
       amount,totalCharge:quoted.quote.totalCharge,productId,
-      serviceDescription:field('description').value,name:field('name').value,email:field('email').value,confirmed:field('confirmed').checked,
-    },});
+      name:field('name').value,email:field('email').value,cpf:field('cpf').value,confirmed:true,
+    },idempotencyKey:key});
     if(!result.checkoutUrl) throw Error('O checkout não respondeu. Aguarde um instante e tente novamente.');
     sessionStorage.setItem('pixai-operation-'+result.id,result.accessToken);
     location.assign(result.checkoutUrl);
@@ -140,7 +141,7 @@ async function resultPage(params) {
 
 function terms() {
   main.innerHTML=`<article class="legal"><a class="back" href="#home">← Voltar</a><div class="eyebrow">Termos de uso</div><h1>Pagamento de serviços</h1>
-    <p>Este portal é usado para pagar serviços previamente solicitados, orçados ou contratados. Antes de continuar, o cliente deve conferir a descrição, a referência e o valor.</p>
+    <p>Este portal é usado para pagar serviços previamente solicitados, orçados ou contratados. Antes de continuar, o cliente deve conferir a opção, o valor, o nome, o e-mail e o CPF.</p>
     <h2>Pagamento</h2><p>O pagamento é processado pela InfinitePay. As modalidades, o parcelamento, os custos eventualmente exibidos e a aprovação são definidos no checkout da operadora.</p>
     <h2>Prestação do serviço</h2><p>A confirmação do pagamento não substitui nem modifica o orçamento, contrato, escopo, prazo ou condições comerciais já acordados entre as partes.</p>
     <h2>Cancelamento e reembolso</h2><p>Pedidos serão analisados conforme o contrato do serviço, o estágio de execução e a legislação aplicável. O estorno, quando devido, seguirá os prazos e procedimentos da forma de pagamento.</p>
@@ -148,7 +149,7 @@ function terms() {
 }
 function privacy() {
   main.innerHTML=`<article class="legal"><a class="back" href="#home">← Voltar</a><div class="eyebrow">Privacidade</div><h1>Como tratamos seus dados</h1>
-    <p>O portal coleta nome, e-mail, referência, descrição e valor do serviço para criar, identificar e conciliar o pagamento, prestar atendimento e cumprir obrigações legais.</p>
+    <p>O portal coleta nome, e-mail, CPF, opção selecionada e valor para criar, identificar e conciliar o pagamento, entregar o serviço, prestar atendimento e cumprir obrigações legais.</p>
     <h2>Pagamento</h2><p>Os dados do cartão ou da conta usada no pagamento são informados diretamente à InfinitePay e não são armazenados por este site.</p>
     <h2>Segurança e retenção</h2><p>Os dados de identificação guardados pelo portal são protegidos e mantidos pelo período necessário à execução do serviço, prevenção a fraudes e cumprimento de obrigações legais.</p>
     <h2>Seus direitos</h2><p>Solicitações de acesso, correção ou eliminação podem ser feitas pelo canal de atendimento informado no orçamento ou contrato, observadas as retenções exigidas por lei.</p></article>`;
@@ -165,8 +166,7 @@ function adminLogin() {
 const contentFields=[
   ['eyebrow','Chamada superior'],['title','Título principal'],['subtitle','Texto de apresentação'],
   ['formTitle','Título do formulário'],['formHelp','Orientação do formulário'],
-  ['descriptionLabel','Rótulo da descrição'],['descriptionPlaceholder','Exemplo da descrição'],
-  ['amountLabel','Rótulo do valor'],['nameLabel','Rótulo do nome'],['emailLabel','Rótulo do e-mail'],['buttonLabel','Texto do botão'],
+  ['amountLabel','Rótulo do valor personalizado'],['nameLabel','Rótulo do nome'],['emailLabel','Rótulo do e-mail'],['cpfLabel','Rótulo do CPF'],['cpfNotice','Aviso abaixo do CPF'],['buttonLabel','Texto do botão'],
 ];
 function contentEditor(key,label,value) {
   const wide=['subtitle','formHelp'].includes(key),tag=wide?'textarea':'input';
@@ -237,7 +237,7 @@ async function adminDashboard() {
       catch(error){alertUser(error.message);}
     });
     document.querySelectorAll('.detail').forEach(button=>button.onclick=async()=>{
-      try {const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});alertUser(`${detail.name} — ${detail.email} — ${detail.serviceDescription||'Serviço'}`);}
+      try {const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});alertUser(`${detail.name} — ${detail.email} — CPF ${detail.cpf||'não registrado'} — ${detail.serviceDescription||'Serviço'}`);}
       catch(error){alertUser(error.message);}
     });
     const deliveryDialog=document.querySelector('#delivery-dialog'),deliveryForm=document.querySelector('#delivery-form');
