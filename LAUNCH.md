@@ -12,8 +12,8 @@
 
 ## Jornada
 
-1. Cliente seleciona uma opção e informa nome, e-mail e CPF; a quinta opção também solicita o valor personalizado.
-2. O servidor recalcula e valida o limite; não aplica margem ou tarifa sobre o valor.
+1. Cliente seleciona uma opção e informa nome, e-mail, CPF, celular e endereço (celular e endereço podem ser desativados no painel); a quinta opção também solicita o valor personalizado.
+2. O servidor recalcula e valida o limite, então soma a taxa estimada do cartão e a margem mínima de lucro (30% por padrão) ao valor do serviço para chegar no total cobrado.
 3. O servidor cria um link do Checkout Integrado InfinitePay com um identificador único.
 4. Cliente escolhe Pix ou cartão e eventuais parcelas no checkout da InfinitePay.
 5. No retorno ou webhook, o servidor consulta `payment_check` usando o identificador da operação e as referências da transação.

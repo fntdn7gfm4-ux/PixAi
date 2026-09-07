@@ -1,12 +1,12 @@
 # PixAI — portal de pagamento de serviços
 
-Aplicação web para cobrar serviços previamente orçados ou contratados. O cliente seleciona uma opção, informa nome, e-mail e CPF — além do valor quando escolher a opção personalizada — e conclui o pagamento no checkout hospedado da InfinitePay.
+Aplicação web para cobrar serviços previamente orçados ou contratados. O cliente seleciona uma opção, informa nome, e-mail e CPF — além do valor quando escolher a opção personalizada — e conclui o pagamento no checkout hospedado da InfinitePay. Celular e endereço também podem ser coletados no portal e enviados prontos para o checkout, evitando que a InfinitePay peça esses dados de novo; cada um pode ser desligado separadamente pelo painel.
 
 ## Fluxo em produção
 
 - Valores permitidos: R$ 20 a R$ 250.
 - InfiniteTag: `lucas-banza` (sem `$` na integração).
-- O valor enviado ao checkout é exatamente o valor informado no portal.
+- O valor exibido ao cliente já é o valor final enviado ao checkout: preço do serviço mais a taxa estimada do cartão e a margem mínima de lucro (30% por padrão, ajustável no painel).
 - Pix e cartão são oferecidos conforme a configuração da conta InfinitePay.
 - O site nunca recebe número do cartão ou CVV.
 - Webhook e retorno do checkout acionam uma consulta `payment_check`; nenhum campo `paid` recebido por webhook é aceito sem conferência direta.

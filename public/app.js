@@ -1,8 +1,9 @@
 const main=document.querySelector('#main');
 const notice=document.querySelector('#notification');
 const adminPage=document.body?.dataset?.admin==='true';
-let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Opção selecionada',products:[],content:{}};
+let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Opção selecionada',collectPhone:true,collectAddress:true,products:[],content:{}};
 let adminToken=sessionStorage.getItem('pixai-admin-token')||'';
+let amountPreviewTimer;
 
 const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const money=cents=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format((Number(cents)||0)/100);
@@ -11,6 +12,11 @@ const amountFrom=value=>{
   const normalized=String(value).trim().replace(/\s/g,'').replace(/\./g,'').replace(',','.');
   const number=Number(normalized);
   return Number.isFinite(number)?Math.round(number*100):NaN;
+};
+const ppmFrom=value=>{
+  const normalized=String(value).trim().replace(/\s/g,'').replace(',','.');
+  const number=Number(normalized);
+  return Number.isFinite(number)?Math.round(number*10000):NaN;
 };
 const statusLabel={CHECKOUT_CREATING:'Criando checkout',CHECKOUT_UNCERTAIN:'Confira na InfinitePay',AWAITING_PAYMENT:'Aguardando pagamento',COMPLETED:'Pagamento confirmado',DELIVERED:'Produto entregue',PAYMENT_CONFIRMED:'Pagamento confirmado',READY_FOR_MANUAL_PIX:'Registro antigo',FAILED:'Falhou'};
 
@@ -52,11 +58,18 @@ function home() {
         <h2>${esc(content.formTitle)}</h2><p>${esc(content.formHelp)}</p>
         <form id="service-form">
           <div class="form-grid">
-            ${products.length?`<div class="wide"><label for="product">${esc(bootstrap.serviceLabel)}</label><select id="product" name="productId" required><option value="">Selecione</option>${products.map(product=>`<option value="${esc(product.id)}">${esc(product.name)}${product.customPrice?' — valor personalizado':' — '+money(product.price)}</option>`).join('')}</select></div>`:''}
-            <div class="wide" id="custom-amount" hidden><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p></div>
+            ${products.length?`<div class="wide"><label for="product">${esc(bootstrap.serviceLabel)}</label><select id="product" name="productId" required><option value="">Selecione</option>${products.map(product=>`<option value="${esc(product.id)}">${esc(product.name)}${product.customPrice?' — valor personalizado':' — '+money(product.displayPrice??product.price)}</option>`).join('')}</select></div>`:''}
+            <div class="wide" id="custom-amount" hidden><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p><p class="field-help" id="amount-total"></p></div>
             <div><label for="name">${esc(content.nameLabel)}</label><input id="name" name="name" autocomplete="name" maxlength="140" required></div>
             <div><label for="email">${esc(content.emailLabel)}</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" required></div>
             <div class="wide"><label for="cpf">${esc(content.cpfLabel)}</label><input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" required><p class="notice cpf-notice">${esc(content.cpfNotice)}</p></div>
+            ${bootstrap.collectPhone?`<div><label for="phone">Celular</label><input id="phone" name="phone" inputmode="numeric" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000" required></div>`:''}
+            ${bootstrap.collectAddress?`
+            <div><label for="cep">CEP</label><input id="cep" name="cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000" required></div>
+            <div><label for="street">Rua</label><input id="street" name="street" autocomplete="address-line1" maxlength="140" required></div>
+            <div><label for="neighborhood">Bairro</label><input id="neighborhood" name="neighborhood" autocomplete="address-level3" maxlength="100" required></div>
+            <div><label for="number">Número</label><input id="number" name="number" autocomplete="off" maxlength="20" required></div>
+            <div class="wide"><label for="complement">Complemento (opcional)</label><input id="complement" name="complement" autocomplete="address-line2" maxlength="100"></div>`:''}
           </div>
           <p class="fine-print">Ao continuar, você confirma os dados informados e aceita os <a href="#terms"><u>Termos de uso</u></a> e a <a href="#privacy"><u>Política de privacidade</u></a>.</p>
           <button class="btn full" ${bootstrap.paymentsEnabled?'':'disabled'}>${bootstrap.paymentsEnabled?esc(content.buttonLabel)+' →':'Pagamentos indisponíveis'}</button>
@@ -73,7 +86,7 @@ function home() {
     <section class="benefits">
       <div class="benefit"><span class="line-icon" aria-hidden="true">⌁</span><div><strong>Sem criar conta</strong><p>Você só informa os dados necessários ao pagamento.</p></div></div>
       <div class="benefit"><span class="line-icon" aria-hidden="true">▣</span><div><strong>Checkout InfinitePay</strong><p>O pagamento é processado no ambiente da operadora.</p></div></div>
-      <div class="benefit"><span class="line-icon" aria-hidden="true">◎</span><div><strong>Valor exato</strong><p>O site envia o mesmo valor informado para o checkout.</p></div></div>
+      <div class="benefit"><span class="line-icon" aria-hidden="true">◎</span><div><strong>Total transparente</strong><p>O valor exibido na página já é o total cobrado no checkout, sem surpresas.</p></div></div>
     </section>`;
   document.querySelector('#service-form')?.addEventListener('submit',startPayment);
   document.querySelector('#product')?.addEventListener('change',event=>{
@@ -84,8 +97,20 @@ function home() {
     document.querySelector('#custom-amount').hidden=!product.customPrice;
     amount.required=product.customPrice;
     amount.value=product.customPrice?'':(product.price/100).toFixed(2).replace('.',',');
+    document.querySelector('#amount-total').textContent='';
+  });
+  document.querySelector('#amount')?.addEventListener('input',event=>{
+    const preview=document.querySelector('#amount-total'),amount=amountFrom(event.currentTarget.value);
+    if(!Number.isFinite(amount)||amount<bootstrap.minAmount||amount>bootstrap.maxAmount) {preview.textContent='';return;}
+    clearTimeout(amountPreviewTimer);
+    amountPreviewTimer=setTimeout(async()=>{
+      try {const quoted=await api('infinitepay/quote',{method:'POST',body:{amount,productId:document.querySelector('#product')?.value||null}});preview.textContent='Total a pagar no checkout: '+money(quoted.quote.totalCharge)+' (já inclui taxa e margem).';}
+      catch {preview.textContent='';}
+    },400);
   });
   document.querySelector('#cpf')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');});
+  document.querySelector('#phone')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4,5})(\d{4})$/,'$1-$2');});
+  document.querySelector('#cep')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,8);event.currentTarget.value=digits.replace(/(\d{5})(\d)/,'$1-$2');});
 }
 
 async function startPayment(event) {
@@ -98,10 +123,16 @@ async function startPayment(event) {
     const productId=field('productId')?.value||null;
     const quoted=await api('infinitepay/quote',{method:'POST',body:{amount,productId}});
     const key=crypto.randomUUID();
-    const result=await api('infinitepay/create',{method:'POST',body:{
+    const payload={
       amount,totalCharge:quoted.quote.totalCharge,productId,
       name:field('name').value,email:field('email').value,cpf:field('cpf').value,confirmed:true,
-    },idempotencyKey:key});
+    };
+    if(bootstrap.collectPhone) payload.phone=field('phone').value;
+    if(bootstrap.collectAddress) payload.address={
+      cep:field('cep').value,street:field('street').value,neighborhood:field('neighborhood').value,
+      number:field('number').value,complement:field('complement').value,
+    };
+    const result=await api('infinitepay/create',{method:'POST',body:payload,idempotencyKey:key});
     if(!result.checkoutUrl) throw Error('O checkout não respondeu. Aguarde um instante e tente novamente.');
     sessionStorage.setItem('pixai-operation-'+result.id,result.accessToken);
     location.assign(result.checkoutUrl);
@@ -126,7 +157,7 @@ async function resultPage(params) {
       <div class="review-box">
         <div class="row"><span>Opção</span><strong>${esc(quote.productName||'Serviço')}</strong></div>
         <div class="row"><span>Serviço</span><strong>${esc(quote.serviceDescription||'Serviço')}</strong></div>
-        <div class="row"><span>Valor</span><strong>${money(quote.serviceAmount??quote.totalCharge)}</strong></div>
+        <div class="row"><span>Valor pago</span><strong>${money(quote.totalCharge??quote.serviceAmount)}</strong></div>
         <div class="row"><span>Status</span><strong>${esc(statusLabel[operation.status]||operation.status)}</strong></div>
         ${operation.payment?`<div class="row"><span>Forma</span><strong>${operation.payment.method==='pix'?'Pix':'Cartão'}${operation.payment.installments>1?' em '+operation.payment.installments+'x':''}</strong></div>`:''}
       </div>
@@ -195,7 +226,7 @@ async function adminDashboard() {
   try {
     const [configuration,data]=await Promise.all([api('infinitepay/admin/config',{admin:true}),api('infinitepay/admin/operations',{admin:true})]);
     const operations=data.operations||[],completed=operations.filter(item=>['COMPLETED','DELIVERED','PAYMENT_CONFIRMED'].includes(item.status));
-    const volume=completed.reduce((sum,item)=>sum+(item.quote.serviceAmount??item.quote.totalCharge??0),0);
+    const volume=completed.reduce((sum,item)=>sum+(item.quote.totalCharge??item.quote.serviceAmount??0),0);
     main.innerHTML=`<section class="admin-settings"><div class="admin-top"><div><div class="eyebrow">InfinitePay</div><h1>Painel de pagamentos</h1></div><button id="logout" class="btn secondary">Sair</button></div>
       <div class="metric-grid"><div class="metric"><span>Pagamentos</span><strong>${operations.length}</strong></div><div class="metric"><span>Confirmados</span><strong>${completed.length}</strong></div><div class="metric"><span>Volume confirmado</span><strong>${money(volume)}</strong></div><div class="metric"><span>Integração</span><strong>${configuration.serverEnabled&&configuration.value.enabled?'Ativa':'Pausada'}</strong></div></div>
       <form id="config-form">
@@ -204,12 +235,16 @@ async function adminDashboard() {
           <div><label for="service-label">Rótulo do catálogo</label><input id="service-label" name="service-label" maxlength="100" value="${esc(configuration.value.serviceLabel)}" required></div>
           <div><label for="min-amount">Valor mínimo</label><div class="money-field"><span>R$</span><input id="min-amount" name="min-amount" inputmode="decimal" value="${(configuration.value.minAmount/100).toFixed(2).replace('.',',')}" required></div></div>
           <div><label for="max-amount">Valor máximo</label><div class="money-field"><span>R$</span><input id="max-amount" name="max-amount" inputmode="decimal" value="${(configuration.value.maxAmount/100).toFixed(2).replace('.',',')}" required></div></div>
-        </div><label class="check-label"><input id="enabled" name="enabled" type="checkbox" ${configuration.value.enabled?'checked':''}><span>Aceitar novos pagamentos</span></label></section>
+          <div><label for="gateway-rate">Taxa estimada do cartão (%)</label><input id="gateway-rate" name="gateway-rate" inputmode="decimal" value="${(configuration.value.gatewayRatePpm/10000).toFixed(2).replace('.',',')}" required><p class="field-help">Usada para calcular o valor final cobrado. Ajuste conforme a tarifa real da sua conta InfinitePay.</p></div>
+          <div><label for="min-margin">Margem mínima de lucro (%)</label><input id="min-margin" name="min-margin" inputmode="decimal" value="${(configuration.value.minMarginPpm/10000).toFixed(2).replace('.',',')}" required><p class="field-help">Somada ao preço de cada serviço antes de enviar ao checkout. Mínimo de 30%.</p></div>
+        </div><label class="check-label"><input id="enabled" name="enabled" type="checkbox" ${configuration.value.enabled?'checked':''}><span>Aceitar novos pagamentos</span></label>
+        <label class="check-label"><input id="collect-phone" name="collect-phone" type="checkbox" ${configuration.value.collectPhone?'checked':''}><span>Pedir celular no formulário (envia para a InfinitePay)</span></label>
+        <label class="check-label"><input id="collect-address" name="collect-address" type="checkbox" ${configuration.value.collectAddress?'checked':''}><span>Pedir endereço no formulário (envia para a InfinitePay)</span></label></section>
         <section class="panel mt-25"><h2>Textos e campos da página</h2><div class="form-grid">${contentFields.map(([key,label])=>contentEditor(key,label,configuration.value.content[key])).join('')}</div></section>
         <section class="panel mt-25"><div class="admin-top"><div><h2>Produtos e serviços</h2><p>Crie preços fixos ou deixe o cliente informar o valor.</p></div><button id="add-product" class="btn secondary" type="button">+ Adicionar</button></div><div id="product-list">${configuration.value.products.map(productEditor).join('')}</div></section>
         <button class="btn full save-admin" type="submit">Salvar todas as alterações</button>
       </form>
-      <section class="panel mt-25"><h2>Pagamentos e entregas</h2><div class="table-wrap">${operations.length?`<table><thead><tr><th>Data</th><th>Produto</th><th>Serviço</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>${operations.map(item=>`<tr><td>${when(item.createdAt)}</td><td>${esc(item.quote.productName||'Registro anterior')}</td><td>${esc(item.quote.serviceDescription||'Registro anterior')}</td><td>${money(item.quote.serviceAmount??item.quote.totalCharge)}</td><td>${esc(statusLabel[item.status]||item.status)}${item.deliveredAt?`<br><small>${when(item.deliveredAt)}</small>`:''}</td><td><button class="btn text detail" data-id="${esc(item.id)}">Cliente</button>${item.status==='COMPLETED'?`<button class="btn text delivery" data-id="${esc(item.id)}">Confirmar entrega</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum pagamento registrado.</div>'}</div></section>
+      <section class="panel mt-25"><h2>Pagamentos e entregas</h2><div class="table-wrap">${operations.length?`<table><thead><tr><th>Data</th><th>Produto</th><th>Serviço</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>${operations.map(item=>`<tr><td>${when(item.createdAt)}</td><td>${esc(item.quote.productName||'Registro anterior')}</td><td>${esc(item.quote.serviceDescription||'Registro anterior')}</td><td>${money(item.quote.totalCharge??item.quote.serviceAmount)}</td><td>${esc(statusLabel[item.status]||item.status)}${item.deliveredAt?`<br><small>${when(item.deliveredAt)}</small>`:''}</td><td><button class="btn text detail" data-id="${esc(item.id)}">Cliente</button>${item.status==='COMPLETED'?`<button class="btn text delivery" data-id="${esc(item.id)}">Confirmar entrega</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum pagamento registrado.</div>'}</div></section>
       <dialog id="delivery-dialog" class="delivery-dialog"><form id="delivery-form" method="dialog"><div class="admin-top"><h2>Validar entrega</h2><button class="btn text" value="cancel" type="button" id="close-delivery">Fechar</button></div><p>Registre quem conferiu e o comprovante, protocolo ou observação da entrega.</p><input type="hidden" name="id"><label for="delivery-operator">Responsável</label><input id="delivery-operator" name="operator" maxlength="100" required><label for="delivery-reference" class="mt-16">Comprovante ou observação</label><textarea id="delivery-reference" name="reference" maxlength="200" required></textarea><label class="check-label"><input name="confirmed" type="checkbox" required><span>Confirmo que o produto ou serviço foi entregue ao cliente.</span></label><button class="btn full" type="submit">Validar entrega</button></form></dialog>
     </section>`;
     document.querySelector('#logout').onclick=()=>{sessionStorage.removeItem('pixai-admin-token');adminToken='';adminLogin();};
@@ -230,14 +265,21 @@ async function adminDashboard() {
         });
         await api('infinitepay/admin/config',{method:'PUT',admin:true,body:{revision:configuration.revision,value:{
           handle:elements.namedItem('handle').value,serviceLabel:elements.namedItem('service-label').value,enabled:elements.namedItem('enabled').checked,
-          minAmount:amountFrom(elements.namedItem('min-amount').value),maxAmount:amountFrom(elements.namedItem('max-amount').value),content,products,
+          minAmount:amountFrom(elements.namedItem('min-amount').value),maxAmount:amountFrom(elements.namedItem('max-amount').value),
+          gatewayRatePpm:ppmFrom(elements.namedItem('gateway-rate').value),minMarginPpm:ppmFrom(elements.namedItem('min-margin').value),
+          collectPhone:elements.namedItem('collect-phone').checked,collectAddress:elements.namedItem('collect-address').checked,content,products,
         }}});
         alertUser('Página, campos e produtos atualizados.');adminDashboard();
       }
       catch(error){alertUser(error.message);}
     });
     document.querySelectorAll('.detail').forEach(button=>button.onclick=async()=>{
-      try {const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});alertUser(`${detail.name} — ${detail.email} — CPF ${detail.cpf||'não registrado'} — ${detail.serviceDescription||'Serviço'}`);}
+      try {
+        const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});
+        const phone=detail.phone?` — Celular ${detail.phone.replace(/(\d{2})(\d{4,5})(\d{4})/,'($1) $2-$3')}`:'';
+        const address=detail.address?` — ${detail.address.street}, ${detail.address.number}${detail.address.complement?' ('+detail.address.complement+')':''} — ${detail.address.neighborhood} — CEP ${detail.address.cep.replace(/(\d{5})(\d{3})/,'$1-$2')}`:'';
+        alertUser(`${detail.name} — ${detail.email} — CPF ${detail.cpf||'não registrado'} — ${detail.serviceDescription||'Serviço'}${phone}${address}`);
+      }
       catch(error){alertUser(error.message);}
     });
     const deliveryDialog=document.querySelector('#delivery-dialog'),deliveryForm=document.querySelector('#delivery-form');
