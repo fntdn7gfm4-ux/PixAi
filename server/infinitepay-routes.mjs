@@ -6,7 +6,17 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
   const text=(value,min=1,max=200)=>typeof value==='string'&&value.trim().length>=min&&value.trim().length<=max;
   const email=value=>text(value,3,200)&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const integerEnv=(env,key,fallback)=>/^\d+$/.test(env[key]||'')?Number(env[key]):fallback;
-  const limits=env=>({minAmount:integerEnv(env,'INFINITEPAY_MIN_AMOUNT_CENTS',2000),maxAmount:integerEnv(env,'INFINITEPAY_MAX_AMOUNT_CENTS',25000)});
+  const defaultContent={
+    eyebrow:'Checkout seguro pela InfinitePay',
+    title:'Pague seu serviço com clareza e segurança.',
+    subtitle:'Informe os dados do seu orçamento e siga para o ambiente de pagamento da InfinitePay.',
+    formTitle:'Dados do pagamento',
+    formHelp:'Use a descrição, a referência e o valor que você recebeu no orçamento ou contrato.',
+    referenceLabel:'Referência do serviço',referencePlaceholder:'Ex.: ORC-1024',
+    descriptionLabel:'Serviço contratado',descriptionPlaceholder:'Ex.: consultoria, manutenção ou criação de conteúdo',
+    amountLabel:'Valor',nameLabel:'Nome do cliente',emailLabel:'E-mail',buttonLabel:'Continuar para o pagamento',
+  };
+  const defaultProducts=[{id:'servico-personalizado',name:'Serviço personalizado',description:'Serviço conforme orçamento ou contrato',price:null,active:true,customPrice:true}];
   const config=async(db,env={})=>{
     const row=await first(db,"SELECT * FROM settings WHERE id='infinitepay'");
     const saved=row?JSON.parse(row.value):{};
@@ -14,6 +24,10 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       handle:saved.handle||env.INFINITEPAY_HANDLE||'',
       serviceLabel:saved.serviceLabel||env.INFINITEPAY_SERVICE_LABEL||'Serviços profissionais',
       enabled:saved.enabled??(env.INFINITEPAY_ENABLED==='true'),
+      minAmount:Number.isSafeInteger(saved.minAmount)?saved.minAmount:integerEnv(env,'INFINITEPAY_MIN_AMOUNT_CENTS',2000),
+      maxAmount:Number.isSafeInteger(saved.maxAmount)?saved.maxAmount:integerEnv(env,'INFINITEPAY_MAX_AMOUNT_CENTS',25000),
+      content:{...defaultContent,...(saved.content||{})},
+      products:Array.isArray(saved.products)?saved.products:defaultProducts,
     },revision:row?.revision||0};
   };
   const view=row=>({id:row.id,status:row.status,quote:JSON.parse(row.quote),checkoutUrl:row.checkout_url,
@@ -49,7 +63,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     const enabled=env.INFINITEPAY_ENABLED==='true'&&current.value.enabled;
 
     if(path==='/api/infinitepay/bootstrap'&&request.method==='GET') {
-      return json({provider:'infinitepay',paymentsEnabled:enabled,...limits(env),serviceLabel:current.value.serviceLabel});
+      return json({provider:'infinitepay',paymentsEnabled:enabled,minAmount:current.value.minAmount,maxAmount:current.value.maxAmount,serviceLabel:current.value.serviceLabel,content:current.value.content,products:current.value.products.filter(product=>product.active)});
     }
     if(path==='/api/infinitepay/webhook'&&request.method==='POST') {
       const body=await readBody(request);
@@ -84,24 +98,30 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
     if(request.method!=='GET'&&request.headers.get('origin')!==new URL(request.url).origin) fail(403,'Origem obrigatória.');
     if(!isAdmin&&env.INFINITEPAY_TEST_MODE==='true'&&(!env.INFINITEPAY_TEST_ACCESS_CODE||!await constantEqual(request.headers.get('x-test-access-code')||'',env.INFINITEPAY_TEST_ACCESS_CODE))) fail(401,'Código de acesso ao teste inválido.');
 
-    if(path==='/api/infinitepay/confirm'&&request.method==='POST') {
-      const body=await readBody(request);only(body,['id','transaction_nsu','invoice_slug']);
-      const token=request.headers.get('x-operation-token')||'';
-      const row=await first(db,'SELECT * FROM infinite_operations WHERE id=?',body.id);
-      if(!row||token.length<32||!await constantEqual(await sha256(token),row.access_digest)) fail(404,'Pagamento não encontrado.');
-      return json(await check(db,row,body));
-    }
-
     if(path.endsWith('/config')) {
       if(request.method==='GET') return json({...await config(db,env),serverEnabled:env.INFINITEPAY_ENABLED==='true'});
       if(request.method==='PUT') {
         const body=await readBody(request);only(body,['value','revision']);
         if(!body.value||typeof body.value!=='object') fail(400,'Configuração inválida.');
-        only(body.value,['handle','serviceLabel','enabled']);
+        only(body.value,['handle','serviceLabel','enabled','minAmount','maxAmount','content','products']);
         const value=body.value;
         if(typeof value.handle!=='string'||(value.handle&&!/^[A-Za-z0-9_.-]{1,80}$/.test(value.handle))||typeof value.enabled!=='boolean') fail(400,'Informe uma InfiniteTag válida, sem $.');
         if(!text(value.serviceLabel,3,100)) fail(400,'Informe o nome dos serviços.');
         if(value.enabled&&!value.handle) fail(400,'Informe a InfiniteTag antes de ativar.');
+        if(!Number.isSafeInteger(value.minAmount)||!Number.isSafeInteger(value.maxAmount)||value.minAmount<100||value.maxAmount>100000000||value.minAmount>value.maxAmount) fail(400,'Informe limites de valor válidos.');
+        if(!value.content||typeof value.content!=='object'||Array.isArray(value.content)) fail(400,'Conteúdo da página inválido.');
+        only(value.content,Object.keys(defaultContent));
+        for(const key of Object.keys(defaultContent)) if(typeof value.content[key]!=='string'||value.content[key].trim().length<1||value.content[key].length>300) fail(400,'Preencha todos os textos da página.');
+        if(!Array.isArray(value.products)||value.products.length>50) fail(400,'Catálogo inválido.');
+        const ids=new Set();
+        for(const product of value.products) {
+          if(!product||typeof product!=='object'||Array.isArray(product)) fail(400,'Produto inválido.');
+          only(product,['id','name','description','price','active','customPrice']);
+          if(!/^[a-z0-9-]{3,50}$/.test(product.id)||ids.has(product.id)||!text(product.name,2,100)||!text(product.description,3,160)||typeof product.active!=='boolean'||typeof product.customPrice!=='boolean') fail(400,'Revise os produtos e seus identificadores.');
+          if(!product.customPrice&&(!Number.isSafeInteger(product.price)||product.price<value.minAmount||product.price>value.maxAmount)) fail(400,'O preço fixo deve respeitar os limites configurados.');
+          if(product.customPrice&&product.price!==null) fail(400,'Produtos com valor livre não devem ter preço fixo.');
+          ids.add(product.id);
+        }
         const saved=await config(db,env);
         if(body.revision!==saved.revision) fail(409,'Configuração alterada em outra sessão.');
         const statement=saved.revision
@@ -124,16 +144,22 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
       return json(JSON.parse(await decryptPII(env,row.recipient_encrypted)));
     }
     if(path.endsWith('/quote')&&request.method==='POST') {
-      const body=await readBody(request);only(body,['amount']);
+      const body=await readBody(request);only(body,['amount','productId']);
       if(!enabled&&!isAdmin) fail(503,'Cobranças InfinitePay ainda não ativadas.');
-      const {minAmount,maxAmount}=limits(env);
+      const {minAmount,maxAmount}=current.value;
+      const product=current.value.products.find(item=>item.id===body.productId&&item.active);
+      if(current.value.products.some(item=>item.active)&&!product) fail(400,'Selecione um produto ou serviço disponível.');
+      if(product&&!product.customPrice&&body.amount!==product.price) fail(409,'O preço do produto foi alterado. Atualize a página.');
       if(!Number.isSafeInteger(body.amount)||body.amount<minAmount||body.amount>maxAmount) fail(400,`Informe um valor entre R$ ${(minAmount/100).toFixed(2)} e R$ ${(maxAmount/100).toFixed(2)}.`);
-      return json({quote:{serviceAmount:body.amount,totalCharge:body.amount},pricingRevision:0,note:'O cliente paga o valor informado; formas de pagamento e parcelamento aparecem no checkout InfinitePay.'});
+      return json({quote:{serviceAmount:body.amount,totalCharge:body.amount,productId:product?.id||null,productName:product?.name||current.value.serviceLabel},pricingRevision:current.revision,note:'O cliente paga o valor informado; formas de pagamento e parcelamento aparecem no checkout InfinitePay.'});
     }
     if(path.endsWith('/create')&&request.method==='POST') {
       if(!enabled) fail(503,'Cobranças InfinitePay ainda não ativadas.');
-      const body=await readBody(request);only(body,['amount','totalCharge','serviceReference','serviceDescription','name','email','confirmed']);
-      const {minAmount,maxAmount}=limits(env);
+      const body=await readBody(request);only(body,['amount','totalCharge','productId','serviceReference','serviceDescription','name','email','confirmed']);
+      const {minAmount,maxAmount}=current.value;
+      const product=current.value.products.find(item=>item.id===body.productId&&item.active);
+      if(current.value.products.some(item=>item.active)&&!product) fail(400,'Selecione um produto ou serviço disponível.');
+      if(product&&!product.customPrice&&body.amount!==product.price) fail(409,'O preço do produto foi alterado. Atualize a página.');
       if(body.confirmed!==true||!Number.isSafeInteger(body.amount)||body.amount<minAmount||body.amount>maxAmount||body.totalCharge!==body.amount) fail(400,'Confira o valor e a confirmação.');
       if(!text(body.serviceReference,2,80)||!text(body.serviceDescription,3,160)||!text(body.name,3,140)||!email(body.email)) fail(400,'Preencha referência, serviço, nome e e-mail válidos.');
       if(!/^https:\/\/[^/]+$/.test(env.PUBLIC_BASE_URL||'')||!env.PII_ENCRYPTION_KEY) fail(503,'Endereço ou criptografia pendentes.');
@@ -146,7 +172,7 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         return json(view(old));
       }
       const id='SV-'+crypto.randomUUID(),access=crypto.randomUUID()+crypto.randomUUID(),now=Date.now();
-      const quote={serviceAmount:body.amount,totalCharge:body.amount,serviceReference:body.serviceReference.trim(),serviceDescription:body.serviceDescription.trim()};
+      const quote={serviceAmount:body.amount,totalCharge:body.amount,productId:product?.id||null,productName:product?.name||current.value.serviceLabel,serviceReference:body.serviceReference.trim(),serviceDescription:body.serviceDescription.trim()};
       const detail=await encryptPII(env,JSON.stringify({name:body.name.trim(),email:body.email.trim().toLowerCase(),serviceReference:quote.serviceReference,serviceDescription:quote.serviceDescription}));
       const inserted=await run(db,"INSERT OR IGNORE INTO infinite_operations(id,idempotency_key,request_hash,handle,status,quote,recipient_encrypted,access_digest,created_at) VALUES (?,?,?,?,'CHECKOUT_CREATING',?,?,?,?)",id,key,hash,current.value.handle,JSON.stringify(quote),detail,await sha256(access),now).run();
       if(!inserted.meta.changes) {

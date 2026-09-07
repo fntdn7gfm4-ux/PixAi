@@ -7,6 +7,7 @@
 - [x] Confirmação direta por `payment_check` após retorno ou webhook.
 - [x] Idempotência, proteção de acesso, auditoria e criptografia de dados pessoais.
 - [x] Painel de pagamentos e chave para pausar novas cobranças.
+- [x] Editor administrativo dos textos, campos, limites e catálogo de produtos/serviços.
 - [x] Termos e privacidade ajustados ao pagamento de serviços.
 - [x] Testes automatizados do novo fluxo.
 

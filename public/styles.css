@@ -859,6 +859,33 @@ td small {
 .admin-settings {
   max-width: 860px;
 }
+.product-editor {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 16px;
+  background: #f8faff;
+}
+.product-editor-head,
+.product-checks {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.product-editor-head {
+  margin-bottom: 14px;
+}
+.product-checks .check-label {
+  margin: 16px 0 0;
+}
+.save-admin {
+  margin-top: 20px;
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  box-shadow: 0 8px 24px #061a3924;
+}
 .integration-list {
   display: grid;
   gap: 15px;

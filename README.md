@@ -15,7 +15,7 @@ Aplicação web para cobrar serviços previamente orçados ou contratados. O cli
 
 ## Operação
 
-O painel em `/admin.html` usa `ADMIN_TOKEN` e permite pausar novas cobranças, ajustar a InfiniteTag e consultar pagamentos. O recebimento segue o plano configurado na conta InfinitePay; o sistema não faz repasse, saque ou conversão de cartão em Pix.
+O painel em `/admin.html` usa `ADMIN_TOKEN` e permite pausar novas cobranças, ajustar a InfiniteTag, limites, todos os textos e rótulos da página, além de criar, editar, ativar ou remover produtos e serviços com preço fixo ou valor livre. Também permite consultar pagamentos. O recebimento segue o plano configurado na conta InfinitePay; o sistema não faz repasse, saque ou conversão de cartão em Pix.
 
 Para executar localmente: `npm run dev`. Para validar: `npm run check`.
 
