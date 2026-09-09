@@ -84,6 +84,20 @@ test('descrição enviada à InfinitePay nunca passa de 128 caracteres (limite d
   } finally {globalThis.fetch=oldFetch;}
 });
 
+test('CPF nunca é enviado à InfinitePay; fica somente no registro interno',async()=>{
+  const h=setup(),c=h.client();
+  const quoted=await c('infinitepay/quote',{method:'POST',headers:{origin:'https://pixai.test'},body:{amount:2000,productId:'opcao-1'}});
+  let payload;
+  const oldFetch=globalThis.fetch;
+  globalThis.fetch=async(_url,options)=>{payload=JSON.parse(options.body);return new Response(JSON.stringify({url:'https://checkout.infinitepay.com.br/lucas-banza?lenc=semcpf'}),{status:200});};
+  try {
+    const created=await c('infinitepay/create',{method:'POST',key:crypto.randomUUID(),headers:{origin:'https://pixai.test'},body:{amount:2000,totalCharge:quoted.data.quote.totalCharge,productId:'opcao-1',name:'Titular do Cartão',email:'titular@example.com',cpf:'52998224725',phone:'11987654321',confirmed:true}});
+    assert.equal(created.status,201);
+    assert.doesNotMatch(JSON.stringify(payload),/52998224725|"cpf"/i);
+    assert.deepEqual(Object.keys(payload.customer).sort(),['email','name','phone_number']);
+  } finally {globalThis.fetch=oldFetch;}
+});
+
 test('celular é exigido por padrão e pode ser desativado pelo painel',async()=>{
   const h=setup(),c=h.client();
   const base={amount:5000,totalCharge:7693,productId:'opcao-2',name:'Cliente Sem Dados',email:'semdados@example.com',cpf:'52998224725',confirmed:true};

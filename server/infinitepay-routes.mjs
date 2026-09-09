@@ -248,6 +248,8 @@ export function infiniteRoutes({json,fail,run,first,readBody,only,auditRow,limit
         return json(view(old));
       }
       try {
+        // CPF is the invoice/nota fiscal record only — never sent to InfinitePay.
+        // The customer picks their own card and CPF on InfinitePay's checkout.
         const customer={name:body.name.trim(),email:body.email.trim().toLowerCase()};
         if(current.value.collectPhone) customer.phone_number='+55'+onlyDigits(body.phone);
         const linksPayload={
