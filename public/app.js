@@ -1,405 +1,333 @@
-import {launchGroups} from './launch-fields.js';
-const $ = (s) => document.querySelector(s),
-  main = $("#main");
-const money = (v) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    v / 100,
-  );
-const plainMoney = (v) =>
-  new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(v / 100);
-const esc = (v) =>
-  String(v ?? "").replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        c
-      ],
-  );
-const date = (v) =>
-  new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-const statusLabel = {
-  CREATED: "Criada",
-  AWAITING_PAYMENT: "Aguardando confirmação",
-  PROCESSING_PAYMENT: "Pagamento em processamento",
-  PAYMENT_APPROVED: "Cartão aprovado",
-  PIX_PROCESSING: "Pix em processamento",
-  PIX_SENT: "Pix enviado",
-  COMPLETED: "Concluída",
-  PAYMENT_FAILED: "Pagamento recusado",
-  PIX_FAILED: "Falha no Pix",
-  UNDER_REVIEW: "Em análise",
-  REFUNDED: "Estornada",
-  CHARGEBACK: "Chargeback",
+const main=document.querySelector('#main');
+const notice=document.querySelector('#notification');
+const adminPage=document.body?.dataset?.admin==='true';
+let bootstrap={paymentsEnabled:false,minAmount:2000,maxAmount:25000,serviceLabel:'Opção selecionada',collectPhone:true,products:[],content:{}};
+let adminToken=sessionStorage.getItem('pixai-admin-token')||'';
+let amountPreviewTimer;
+const PLACEHOLDER_IMAGE='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#e7ecf7"/><path d="M30 66 L44 48 L54 58 L70 36 L70 70 L30 70 Z" fill="#aab8da"/><circle cx="40" cy="38" r="7" fill="#aab8da"/></svg>');
+
+const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+const money=cents=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format((Number(cents)||0)/100);
+const when=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)):'—';
+const amountFrom=value=>{
+  const normalized=String(value).trim().replace(/\s/g,'').replace(/\./g,'').replace(',','.');
+  const number=Number(normalized);
+  return Number.isFinite(number)?Math.round(number*100):NaN;
 };
-const state = {
-  bootstrap: null,
-  quote: null,
-  selected: null,
-  scenario: "approved",
-  receipt: null,
-  challenge: null,
-  adminToken: "",
-  adminTab: "pending",
-  settings: null,
-  dashboard: null,
-  allOptions: false,
-  idempotency: null,
-  realQuote: null,
-  realSelected: null,
-  realIdempotency: null,
-  realStatus: null,
+const ppmFrom=value=>{
+  const normalized=String(value).trim().replace(/\s/g,'').replace(',','.');
+  const number=Number(normalized);
+  return Number.isFinite(number)?Math.round(number*10000):NaN;
 };
-let errorTimer;
-function notice(message) {
-  $("#notification").textContent = message;
-  clearTimeout(errorTimer);
-  errorTimer = setTimeout(() => ($("#notification").textContent = ""), 12000);
+const statusLabel={CHECKOUT_CREATING:'Criando checkout',CHECKOUT_UNCERTAIN:'Confira na InfinitePay',AWAITING_PAYMENT:'Aguardando pagamento',COMPLETED:'Pagamento confirmado',DELIVERED:'Produto entregue',PAYMENT_CONFIRMED:'Pagamento confirmado',READY_FOR_MANUAL_PIX:'Registro antigo',FAILED:'Falhou'};
+
+function alertUser(message) {
+  notice.textContent=message;
+  clearTimeout(alertUser.timer);
+  alertUser.timer=setTimeout(()=>notice.textContent='',6500);
 }
-async function api(path, { method = "GET", body, admin = false, key } = {}) {
-  const headers = {};
-  if (body) headers["Content-Type"] = "application/json";
-  if (admin) headers.Authorization = `Bearer ${state.adminToken}`;
-  if (key) headers["Idempotency-Key"] = key;
-  const r = await fetch(`./api/${path}`, {
-    method,
-    headers,
-    credentials: "same-origin",
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  let value;
-  try {
-    value = await r.json();
-  } catch {
-    throw Error("O servidor está indisponível. Recarregue em instantes.");
-  }
-  if (!r.ok) throw Error(value.error || "Não foi possível concluir.");
-  return value;
+async function api(path,{method='GET',body,admin=false,operationToken,idempotencyKey}={}) {
+  const headers={'Accept':'application/json'};
+  if(body) headers['Content-Type']='application/json';
+  if(admin) headers.Authorization='Bearer '+adminToken;
+  if(operationToken) headers['X-Operation-Token']=operationToken;
+  if(idempotencyKey) headers['Idempotency-Key']=idempotencyKey;
+  const response=await fetch('/api/'+path,{method,headers,body:body?JSON.stringify(body):undefined});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok) throw Error(data.error||'Não foi possível concluir esta ação.');
+  return data;
 }
-function navigate(route) {
-  if (location.hash === `#${route}`) render();
-  else location.hash = route;
-}
-const amountMarkup = (v) => `<small>R$</small> ${plainMoney(v)}`;
-const installmentMarkup = (q) =>
-  `${q.installments}x de ${money(q.installmentAmount)}`;
-function home() { return realHome(); }
-function lookup() { return '<section class="panel lookup"><div class="eyebrow">ACOMPANHE SEU PIX</div><h1>Consultar uma operação</h1><p>Informe o código da operação criada neste navegador. A consulta mostra o registro do servidor; o retorno do checkout, sozinho, não confirma o envio do Pix.</p><form id="real-lookup-form"><label for="operation-id">Código da operação</label><input id="operation-id" name="id" required maxlength="80" autocomplete="off"><button class="btn full" type="submit">Consultar</button></form></section>'; }
-function adminLogin() {
-  return `<section class="panel lookup"><div class="eyebrow">ÁREA ADMINISTRATIVA</div><h1>Acesso restrito.</h1><p>Use a chave administrativa configurada no ambiente do servidor. Ela fica somente na memória desta aba.</p><form id="admin-login"><label for="admin-token">Chave administrativa</label><input id="admin-token" name="token" type="password" required minlength="32" autocomplete="off"><button class="btn full" type="submit">Acessar painel →</button></form><div class="notice">A proteção administrativa é independente da jornada sem senha dos clientes.</div></section>`;
-}
-function dashboard() {
-  const ops=state.realOperations?.operations||[];
-  return '<section class="panel"><h2>Operações Asaas</h2><p>'+ops.length+' operações carregadas. '+ops.filter(o=>o.status==='COMPLETED').length+' transferências concluídas.</p><p>Consulte status, conciliação e requisitos de liberação na aba Integrações.</p></section>';
-}
-const numField = (name, label, value, step = "0.01") =>
-  `<div><label for="${name}">${label}</label><input id="${name}" name="${name}" type="number" min="0" step="${step}" value="${value}" required></div>`;
-function pricingAdmin() {
-  const s = state.settings.value;
-  return `<section class="panel admin-settings"><h2>Preços sob seu controle.</h2><p>Configuração central aplicada a novas cotações. A margem mínima é calculada sobre o Pix entregue, após custos.</p><form id="pricing-form"><h3>Taxas de referência do gateway (%)</h3><div class="rate-grid">${s.gatewayRates.map((r, i) => numField(`rate-${i}`, `${i + 1} parcela${i ? "s" : ""}`, r / 10000)).join("")}</div><hr class="section-divider"><h3>Custos e margem</h3><div class="form-grid">${[
-    ["gatewayFixedFee", "Custo fixo gateway (R$)", 100],
-    ["operationalCost", "Custo operacional (R$)", 100],
-    ["taxRate", "Tributos de referência (%)", 10000],
-    ["fraudReserve", "Reserva antifraude (%)", 10000],
-    ["minimumProfitRate", "Margem mínima (%) — mínimo 30", 10000],
-    ["minimumProfitAmount", "Lucro mínimo por operação (R$)", 100],
-    ["minAmount", "Pix mínimo (R$)", 100],
-    ["maxAmount", "Pix máximo (R$)", 100],
-  ]
-    .map(([k, l, d]) => numField(k, l, s[k] / d))
-    .join(
-      "",
-    )}<div><label for="enabled-installments">Parcelas disponíveis</label><input id="enabled-installments" name="installments" value="${s.installments.join(",")}" required><p class="field-help">Separe por vírgulas. Ex.: 1,3,6,9,12</p></div>${numField("maxOperationsPerSession", "Máximo de operações / sessão / dia", s.maxOperationsPerSession, "1")}</div><hr class="section-divider"><h3>Ofertas da Home</h3><p class="field-help">O preço definido é um piso. O servidor aumenta a parcela se necessário para preservar a margem.</p>${s.offers.map((o, i) => `<div class="form-grid review-box">${numField(`offer-${i}-amount`, "Receba no Pix (R$)", o.pixAmount / 100)}${numField(`offer-${i}-count`, "Quantidade de parcelas", o.installments, "1")}${numField(`offer-${i}-floor`, "Parcela de referência (R$)", o.installmentFloor / 100)}<label class="check-label"><input name="offer-${i}-featured" type="checkbox" ${o.featured ? "checked" : ""}>Destacar oferta</label></div>`).join("")}<div class="notice warning">Taxas e custos zerados são apenas referências iniciais, não confirmação de isenção. A produção dependerá de taxas oficiais, tributos e condições validadas.</div><button class="btn" type="submit">Salvar e recalcular ofertas →</button></form></section>`;
-}
-function integrations() {
-  const checks=state.readiness?.checks || {};
-  const labels={provider:'Ambiente Asaas',apiKey:'Credencial do servidor',webhookToken:'Token de eventos',withdrawalToken:'Token de autorização de saque',encryption:'Criptografia',origin:'Endereço de retorno',enabled:'Ativação de pagamentos',productionMode:'Ambiente de produção',commercialApproval:'Aprovação do modelo pelo Asaas',homologation:'Relatório de homologação',identityControls:'Processo de identificação e antifraude',operator:'Identificação da empresa',support:'Canal de suporte',pricing:'Revisão de tarifas e tributos',funding:'Revisão do capital próprio',fundingMode:'Modelo de liquidação',exposureLimit:'Limite de capital comprometido',reserve:'Reserva de saldo',sandboxMode:'Ambiente de homologação'};
-  const operations=state.realOperations?.operations || [];
-  return '<section class="panel"><h2>Asaas · preparação do lançamento</h2><p>O painel mostra a configuração disponível. Marcas de configuração não substituem os testes e a análise dos documentos de aprovação.</p><div class="integration-list">'+Object.entries(checks).map(([k,v])=>'<div class="review-box integration-row"><strong>'+esc(labels[k]||k)+'</strong><span class="badge">'+(v?'CONFIGURADO':'PENDENTE')+'</span></div>').join('')+'</div><p>Eventos aguardando conciliação: '+(state.realOperations?.pendingEvents||0)+'</p><button class="btn secondary" data-action="asaas-refresh">Atualizar</button> <button class="btn secondary" data-action="asaas-replay">Reprocessar eventos pendentes</button><h3>Operações Asaas</h3>'+operations.map(o=>'<article class="review-box"><strong>'+esc(o.id)+'</strong><p>'+esc(realStatusLabel[o.status]||o.status)+' · Pix '+money(o.quote.pixAmount)+' · Cartão '+money(o.quote.totalCharge)+'</p><button class="btn secondary" data-action="asaas-reconcile" data-id="'+esc(o.id)+'">Conciliar com o Asaas</button>'+(['FUNDS_AVAILABLE','PAYMENT_APPROVED','AWAITING_LIQUIDITY'].includes(o.status)?'<form class="release-form"><input type="hidden" name="id" value="'+esc(o.id)+'"><label>Referência da revisão de identidade e antifraude<input name="reference" required minlength="10" maxlength="200" placeholder="Identificador do relatório verificado"></label><label class="check-label"><input type="checkbox" required><span>Conferi a identidade do pagador e a operação '+esc(o.id)+'. Autorizo solicitar Pix de '+money(o.quote.pixAmount)+' com o saldo da conta Asaas.</span></label><button class="btn" type="submit">Autorizar solicitação de Pix</button></form>':'')+'</article>').join('')+(operations.length?'':'<p>Nenhuma operação Asaas registrada.</p>')+'</section>';
-}
-function launchDraftPanel() {
-  const d=state.launchDraft||{value:{},revision:0};
-  return '<section class="panel"><h2>Pendências do lançamento</h2><p>Preencha aos poucos e salve. Campos vazios ficam pendentes. Os dados são privados e não alteram automaticamente a publicação, as tarifas ativas ou a liberação de pagamentos.</p><p>Não cole senhas, chaves de API ou documentos de clientes.</p><form id="launch-draft-form">'+launchGroups.map((g,i)=>'<details '+(i===0?'open':'')+'><summary>'+esc(g.title)+' · '+g.fields.filter(([k])=>d.value[k]!==undefined&&d.value[k]!==null&&d.value[k]!=='').length+'/'+g.fields.length+' informados</summary><div class="form-grid">'+g.fields.map(([k,label,type])=>'<div class="'+(['textarea','document'].includes(type)?'wide':'')+'"><label for="launch-'+k+'">'+esc(label)+'</label>'+(['textarea','document'].includes(type)?'<textarea id="launch-'+k+'" name="'+k+'" rows="'+(type==='document'?16:3)+'" maxlength="'+(type==='document'?20000:2000)+'">'+esc(d.value[k]??'')+'</textarea>':'<input id="launch-'+k+'" name="'+k+'" type="'+type+'" '+(type==='number'?'min="0" step="0.01"':'maxlength="250"')+' value="'+esc(d.value[k]??'')+'">')+'</div>').join('')+'</div></details>').join('')+'<button class="btn" type="submit">Salvar informações e continuar depois</button><p class="field-help">'+(d.updatedAt?'Último salvamento: '+date(d.updatedAt):'Ainda não salvo. Os dados iniciais vieram do documento e das decisões informadas.')+'</p></form></section>';
-}
-function adminTestPanel() {
-  const r=state.testResult;
-  return '<section class="panel"><h2>Testar a jornada completa</h2><div class="notice">Simulação administrativa. Não cobra cartão, não envia Pix e não consulta o Asaas. Funciona com saldo zero.</div><form id="admin-test-form"><div class="form-grid"><div><label>Valor Pix (R$)<input name="amount" inputmode="decimal" value="100,00" required></label></div><div><label>Parcelas<input name="installments" type="number" min="1" max="12" value="6" required></label></div><div class="wide"><label>Cenário<select name="scenario"><option value="approved">Cartão aprovado e Pix concluído</option><option value="zero_balance">Cartão aprovado, aguardando saldo</option><option value="declined">Cartão recusado</option><option value="review">Análise manual</option><option value="pix_failed">Falha no Pix</option></select></label></div></div><label class="check-label"><input type="checkbox" required><span>Quero executar uma simulação, sem movimentação de dinheiro.</span></label><button class="btn" type="submit">Executar teste</button></form>'+(r?'<article class="review-box"><h3>Resultado simulado</h3><p>'+esc(realStatusLabel[r.status]||statusLabel[r.status]||r.status)+'</p><p>Pix: '+money(r.quote.pixAmount)+' · Cartão: '+money(r.quote.totalCharge)+' · '+installmentMarkup(r.quote)+'</p><p>Lucro projetado: '+money(r.quote.profit)+' · Margem sobre cobrança: '+(r.quote.margin*100).toFixed(2)+'%</p><ol>'+r.timeline.map(t=>'<li>'+esc(realStatusLabel[t]||statusLabel[t]||t)+'</li>').join('')+'</ol><p class="field-help">Custos da configuração de referência. Não é comprovante financeiro nem validação de tarifas reais.</p></article>':'')+'</section>';
+function setEnv() {
+  const bar=document.querySelector('#env-bar');
+  bar.innerHTML=`<span class="status-dot"></span><strong>INFINITEPAY</strong><span>${bootstrap.paymentsEnabled?'Pagamentos disponíveis':'Pagamentos temporariamente indisponíveis'}</span>`;
 }
 
-function admin() {
-  if (!state.adminToken || !state.dashboard || !state.settings)
-    return adminLogin();
-  return `<div class="admin-top"><div><div class="eyebrow">CONTROLE DA OPERAÇÃO</div><h1>Visão do negócio.</h1></div><button class="btn secondary" data-action="admin-logout">Encerrar acesso</button></div><div class="tabs" role="tablist" aria-label="Administração">${[
-    ["pending", "Pendências"],
-    ["test", "Testar fluxo"],
-    ["dashboard", "Visão geral"],
-    ["pricing", "Preços"],
-    ["integrations", "Integrações"],
-  ]
-    .map(
-      ([v, l]) =>
-        `<button role="tab" aria-selected="${state.adminTab === v}" class="${state.adminTab === v ? "active" : ""}" data-action="admin-tab" data-tab="${v}">${l}</button>`,
-    )
-    .join(
-      "",
-    )}</div>${state.adminTab === "dashboard" ? dashboard() : state.adminTab === "pricing" ? pricingAdmin() : state.adminTab === "pending" ? launchDraftPanel() : state.adminTab === "test" ? adminTestPanel() : integrations()}`;
-}
-function legal(type) {
-  return '<article class="panel legal centered"><a class="back" href="#home">← Início</a><h1>'+(type==='privacy'?'Privacidade':'Termos de uso')+'</h1>'+(type==='privacy'?'<p>O site utiliza um cookie de sessão para vincular cotações e consultas ao navegador. Registros técnicos limitam tentativas e protegem o serviço.</p><p>Dados de cartão devem ser informados somente no checkout hospedado pelo Asaas. A confirmação de uma operação pode envolver dados de identificação e chave Pix, armazenados com proteção e utilizados para processamento e análise.</p><p>O cadastro de novas operações está indisponível enquanto são finalizados os dados do responsável, o canal de privacidade e as condições de tratamento e retenção.</p>':'<p>A disponibilidade de pagamentos depende da liberação do serviço. No momento, novas cobranças e transferências não estão disponíveis.</p><p>Antes de confirmar uma operação, deverão ser apresentados valor do Pix, total cobrado, parcelamento, custos e condições aplicáveis. A aprovação do cartão não significa que o Pix foi concluído.</p><p>O envio depende de confirmação pelo parceiro, verificações de identidade, saldo disponível e limites operacionais. As condições comerciais definitivas serão publicadas antes da contratação.</p>')+'</article>';
-}
-const realStatusLabel = {
-  CHECKOUT_CREATING: "Preparando checkout",
-  CHECKOUT_UNCERTAIN: "Checkout em conciliação — não repita o pagamento",
-  AWAITING_FUNDS: "Pagamento registrado; aguardando liquidação",
-  FUNDS_AVAILABLE: "Saldo recebido; aguardando revisão de identidade",
-  PIX_SUBMITTING: "Solicitando transferência",
-  PIX_UNCERTAIN: "Transferência em conciliação — não repita o envio",
-  PAYMENT_DISPUTED: "Pagamento em contestação ou estorno",
-  AWAITING_PAYMENT: "Aguardando confirmação do pagamento…",
-  PAYMENT_APPROVED: "Pagamento aprovado; aguardando liberação do Pix",
-  AWAITING_LIQUIDITY: "Pagamento registrado; Pix aguardando saldo do operador",
-  PIX_PROCESSING: "Pix em processamento…",
-  COMPLETED: "Pix enviado com sucesso.",
-  PAYMENT_FAILED: "Pagamento não aprovado.",
-  PIX_FAILED: "Não foi possível enviar o Pix. Nossa equipe foi notificada.",
-};
-function realHome() {
-  if(!state.bootstrap?.paymentsEnabled) return '<section class="intro"><div><div class="eyebrow"><span class="status-dot"></span> PIXAI</div><h1>Seu Pix.<br>Mais possibilidades.</h1><p>Escolha o valor e confira as condições de pagamento no cartão, com clareza em cada etapa.</p></div></section><section class="panel"><h2>Pagamentos ainda indisponíveis</h2><p>Estamos finalizando a liberação do serviço. Não é possível contratar uma operação ou efetuar um pagamento neste momento.</p><a class="btn secondary" href="#lookup">Consultar uma operação existente</a></section>';
-
-  return `<section class="intro"><div><div class="eyebrow"><span class="status-dot"></span> PAGAMENTO NO CARTÃO</div><h1>Receba no Pix<br>pagando no cartão.</h1><p>Pagamento processado pelo Asaas. A chave Pix precisa ser do mesmo CPF de quem paga.</p></div></section>
- <div class="custom-card"><span class="icon-box" aria-hidden="true">＋</span><div><h3>Quanto você quer receber?</h3><p>Informe o valor do Pix.</p></div><form id="real-amount-form"><label class="money-field"><span aria-hidden="true">R$</span><input name="amount" inputmode="decimal" placeholder="180,00" required autocomplete="off" aria-label="Quanto você quer receber?" maxlength="12"></label><button class="btn" type="submit">Ver parcelas <span aria-hidden="true">→</span></button></form></div>
- <p class="fine-print">O Pix só é enviado depois que o Asaas confirma o pagamento do cartão, e apenas para uma chave Pix cujo titular seja o mesmo CPF informado nesta página.</p>`;
-}
-function realConfirmView() {
-  const q = state.realQuote;
-  const selected =
-    state.realSelected || q.options.find((o) => o.recommended) || q.options[0];
-  const shown = q.options.filter((o) =>
-    [1, 3, 6, 12, selected.installments].includes(o.installments),
-  );
-  return `<a class="back" href="#real">← Alterar valor</a><div class="checkout-layout"><section class="panel"><h2>Confirme os dados.</h2><p>Você recebe ${money(selected.pixAmount)} no Pix.</p><div class="options">${shown
-    .map(
-      (o) =>
-        `<label class="option ${selected.installments === o.installments ? "selected" : ""}"><input type="radio" name="real-installments" value="${o.installments}" ${selected.installments === o.installments ? "checked" : ""}><span class="option-main"><strong>${installmentMarkup(o)}</strong></span><span class="option-total">${money(o.totalCharge)}<br><small>no total</small></span></label>`,
-    )
-    .join(
-      "",
-    )}</div><form id="real-confirm-form"><div class="form-grid"><div class="wide"><label for="real-name">Nome completo</label><input id="real-name" name="name" required maxlength="140" autocomplete="name"></div><div><label for="real-email">E-mail</label><input id="real-email" name="email" type="email" required autocomplete="email"></div><div><label for="real-cpf">CPF</label><input id="real-cpf" name="cpf" required inputmode="numeric" placeholder="000.000.000-00" autocomplete="off"></div><div><label for="real-pix-type">Tipo de chave Pix</label><select id="real-pix-type" name="pixKeyType"><option value="CPF">CPF</option></select></div><div class="wide"><label for="real-pix-key">Chave Pix</label><input id="real-pix-key" name="pixKey" required autocomplete="off"><p class="field-help">A chave precisa pertencer ao mesmo CPF informado acima. A consulta da chave não substitui a verificação da identidade do pagador.</p></div></div><div class="notice warning">Você será redirecionado ao checkout seguro do Asaas para pagar no cartão. Nenhum dado de cartão passa por este site. A cobrança no cartão pode ser confirmada antes de haver saldo para o Pix. Nesse caso, a operação ficará aguardando aporte do operador; o pagamento não comprova envio do Pix. O checkout permite até o número de parcelas escolhido; o total desta cotação permanece o mesmo.</div><label class="check-label"><input name="consent" type="checkbox" required><span>Conferi os valores, aceito o total exibido e entendo que o Pix depende da liquidação do cartão e da revisão de identidade, sem garantia de envio imediato.</span></label><button class="btn full" type="submit">Pagar e receber Pix →</button></form></section></div>`;
-}
-function realResultView() {
-  const s = state.realStatus;
-  if (!s)
-    return `<section class="panel centered"><h1>Consultando sua operação…</h1><p>Aguarde um instante.</p></section>`;
-  return `<div class="centered"><a class="back" href="#real">← Nova operação</a><section class="panel"><div class="eyebrow">STATUS DA OPERAÇÃO</div><h1>${realStatusLabel[s.status] || s.status}</h1><div class="receipt-id">${esc(s.id)}</div><div class="row"><span>Você recebe no Pix</span><strong>${money(s.quote.pixAmount)}</strong></div><div class="row"><span>Total no cartão</span><strong>${money(s.quote.totalCharge)}</strong></div><p class="field-help">O retorno do checkout não confirma o pagamento por si só; esta página consulta o status real a cada poucos segundos.</p></section></div>`;
-}
-let realPollTimer;
-async function pollRealStatus(id) {
-  clearTimeout(realPollTimer);
-  try {
-    state.realStatus = await api(`real/status/${id}`);
-  } catch (e) {
-    notice(e.message);
-    return;
-  }
-  if (location.hash.slice(1).split("?")[0] !== "real-result") return;
-  render(false);
-  if (!["COMPLETED", "PAYMENT_FAILED", "PIX_FAILED", "PAYMENT_DISPUTED", "PIX_UNCERTAIN", "CHECKOUT_UNCERTAIN"].includes(state.realStatus.status))
-    realPollTimer = setTimeout(() => pollRealStatus(id), 4000);
-}
-function render(startPolling = true) {
-  const [route, queryString]=(location.hash.slice(1)||(document.body?.dataset.admin==='true'?'admin':'home')).split('?');
-  const params=new URLSearchParams(queryString||'');
-  if(route==='admin' && document.body?.dataset.admin!=='true') { location.href='./admin.html';return; }
-  if(route==='real-confirm' && (!state.realQuote || !state.bootstrap?.paymentsEnabled)) return navigate('home');
-  const views = {
-    home,
-    lookup,
-    admin,
-    real: realHome,
-    "real-confirm": realConfirmView,
-    "real-result": realResultView,
-    privacy: () => legal("privacy"),
-    terms: () => legal("terms"),
+function home() {
+  const content={
+    eyebrow:'Checkout seguro pela InfinitePay',title:'Pague seu serviço com clareza e segurança.',subtitle:'Informe os dados do seu orçamento e siga para o ambiente de pagamento da InfinitePay.',
+    formTitle:'Dados do pagamento',formHelp:'Selecione uma opção e informe os dados do titular que receberá o serviço.',
+    amountLabel:'Valor personalizado',nameLabel:'Nome do cliente',emailLabel:'E-mail',cpfLabel:'CPF',cpfNotice:'O serviço contratado será enviado apenas para o CPF do titular informado neste campo.',buttonLabel:'Continuar para o pagamento',...bootstrap.content,
   };
-  main.innerHTML = (views[route] || home)();
-  main.focus({ preventScroll: true });
-  window.scrollTo({ top: 0, behavior: "instant" });
-  if (route === "real-result") {
-    const op = params.get("op");
-    if (op && startPolling) pollRealStatus(op);
-  } else {
-    clearTimeout(realPollTimer);
-  }
+  const products=bootstrap.products||[];
+  main.innerHTML=`
+    <section class="intro">
+      <div><div class="eyebrow">${esc(content.eyebrow)}</div><h1>${esc(content.title)}</h1><p>${esc(content.subtitle)}</p></div>
+      <div class="micro-pill"><span class="icon-box" aria-hidden="true">✓</span><span><strong>Confirmação automática</strong><br>Pix ou cartão no checkout</span></div>
+    </section>
+    <div class="checkout-layout">
+      <section class="panel">
+        <h2>${esc(content.formTitle)}</h2><p>${esc(content.formHelp)}</p>
+        <form id="service-form">
+          <div class="form-grid">
+            ${products.length?`<div class="wide"><label>${esc(bootstrap.serviceLabel)}</label><div class="product-grid" id="product-grid" role="radiogroup" aria-label="${esc(bootstrap.serviceLabel)}">${products.map(product=>`<label class="product-card"><input type="radio" name="productId" value="${esc(product.id)}" required><img src="${product.image||PLACEHOLDER_IMAGE}" width="100" height="100" alt=""><span class="product-card-name">${esc(product.name)}</span><span class="product-card-price">${product.customPrice?'Valor personalizado':money(product.displayPrice??product.price)}</span></label>`).join('')}</div></div>`:''}
+            <div class="wide" id="custom-amount" hidden><label for="amount">${esc(content.amountLabel)}</label><div class="money-field"><span>R$</span><input id="amount" name="amount" inputmode="decimal" placeholder="100,00"></div><p class="field-help">Entre ${money(bootstrap.minAmount)} e ${money(bootstrap.maxAmount)}.</p><p class="field-help" id="amount-total"></p></div>
+            <div><label for="name">${esc(content.nameLabel)}</label><input id="name" name="name" autocomplete="name" maxlength="140" required></div>
+            <div><label for="email">${esc(content.emailLabel)}</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" required></div>
+            <div class="wide"><label for="cpf">${esc(content.cpfLabel)}</label><input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00" required><p class="notice cpf-notice">${esc(content.cpfNotice)}</p></div>
+            ${bootstrap.collectPhone?`<div><label for="phone">Celular</label><input id="phone" name="phone" inputmode="numeric" autocomplete="tel" maxlength="16" placeholder="(00) 00000-0000" required></div>`:''}
+          </div>
+          <p class="fine-print">Ao continuar, você confirma os dados informados e aceita os <a href="#terms"><u>Termos de uso</u></a> e a <a href="#privacy"><u>Política de privacidade</u></a>.</p>
+          <button class="btn full" ${bootstrap.paymentsEnabled?'':'disabled'}>${bootstrap.paymentsEnabled?esc(content.buttonLabel)+' →':'Pagamentos indisponíveis'}</button>
+        </form>
+      </section>
+      <aside class="panel summary">
+        <div class="eyebrow">Como funciona</div>
+        <div class="row"><span>1</span><strong>Confira o serviço e o valor</strong></div>
+        <div class="row"><span>2</span><strong>Escolha Pix ou cartão</strong></div>
+        <div class="row"><span>3</span><strong>Receba a confirmação</strong></div>
+        <hr><p class="fine-print">Os dados do cartão são informados somente no checkout da InfinitePay. A forma de pagamento e o parcelamento disponíveis são apresentados lá.</p>
+      </aside>
+    </div>
+    <section class="benefits">
+      <div class="benefit"><span class="line-icon" aria-hidden="true">⌁</span><div><strong>Sem criar conta</strong><p>Você só informa os dados necessários ao pagamento.</p></div></div>
+      <div class="benefit"><span class="line-icon" aria-hidden="true">▣</span><div><strong>Checkout InfinitePay</strong><p>O pagamento é processado no ambiente da operadora.</p></div></div>
+      <div class="benefit"><span class="line-icon" aria-hidden="true">◎</span><div><strong>Total transparente</strong><p>O valor exibido na página já é o total cobrado no checkout, sem surpresas.</p></div></div>
+    </section>`;
+  document.querySelector('#service-form')?.addEventListener('submit',startPayment);
+  document.querySelector('#product-grid')?.addEventListener('change',event=>{
+    const product=products.find(item=>item.id===event.target.value);
+    const form=document.querySelector('#service-form');
+    if(!product||!form) return;
+    const amount=form.elements.namedItem('amount');
+    document.querySelector('#custom-amount').hidden=!product.customPrice;
+    amount.required=product.customPrice;
+    amount.value=product.customPrice?'':(product.price/100).toFixed(2).replace('.',',');
+    document.querySelector('#amount-total').textContent='';
+  });
+  document.querySelector('#amount')?.addEventListener('input',event=>{
+    const preview=document.querySelector('#amount-total'),amount=amountFrom(event.currentTarget.value);
+    if(!Number.isFinite(amount)||amount<bootstrap.minAmount||amount>bootstrap.maxAmount) {preview.textContent='';return;}
+    clearTimeout(amountPreviewTimer);
+    amountPreviewTimer=setTimeout(async()=>{
+      try {const quoted=await api('infinitepay/quote',{method:'POST',body:{amount,productId:document.querySelector('#product')?.value||null}});preview.textContent='Total a pagar no checkout: '+money(quoted.quote.totalCharge)+' (já inclui taxa e margem).';}
+      catch {preview.textContent='';}
+    },400);
+  });
+  document.querySelector('#cpf')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');});
+  document.querySelector('#phone')?.addEventListener('input',event=>{const digits=event.currentTarget.value.replace(/\D/g,'').slice(0,11);event.currentTarget.value=digits.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4,5})(\d{4})$/,'$1-$2');});
 }
-function parseAmount(value) {
-  const clean = value.trim().replace(/^R\$\s*/, "");
-  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(clean))
-    throw Error("Informe um valor como 180,00.");
-  return Math.round(Number(clean.replaceAll(".", "").replace(",", ".")) * 100);
-}
-async function loadAdmin() {
-  const [d, s] = await Promise.all([
-    api("admin/dashboard", { admin: true }),
-    api("admin/settings", { admin: true }),
-  ]);
-  state.dashboard = d;
-  state.settings = s;
-  await loadAsaasAdmin();
-}
-async function loadAsaasAdmin() {
-  const [r,o,d]=await Promise.all([api('real/admin/readiness',{admin:true}),api('real/admin/operations',{admin:true}),api('real/admin/launch-draft',{admin:true})]);
-  state.readiness=r;state.realOperations=o;state.launchDraft=d;
-}
-document.addEventListener("click", async (event) => {
-  const b = event.target.closest("[data-action]");
-  if (!b) return;
-  const action = b.dataset.action;
-  b.disabled = true;
-  try {
-    if(action==='asaas-refresh') { await loadAsaasAdmin();render(); }
-    if(action==='asaas-replay') { const r=await api('real/admin/replay',{method:'POST',admin:true,body:{}});await loadAsaasAdmin();render();notice(r.processed+' eventos conciliados.'); }
-    if(action==='asaas-reconcile') { await api('real/admin/reconcile',{method:'POST',admin:true,body:{id:b.dataset.id}});await loadAsaasAdmin();render(); }
-    if (action === "admin-tab") {
-      state.adminTab = b.dataset.tab;
-      await loadAdmin();
-      render();
-    } else if (action === "admin-logout") {
-      state.adminToken = "";
-      state.dashboard = null;
-      state.settings = null;
-      render();
-    }
-  } catch (e) {
-    notice(e.message);
-  } finally {
-    b.disabled = false;
-  }
-});
-document.addEventListener("change", (event) => {
-  if (event.target.name === "real-installments") {
-    state.realSelected = state.realQuote.options.find(
-      (q) => q.installments === Number(event.target.value),
-    );
-    render();
-  }
-});
-document.addEventListener("submit", async (event) => {
+
+async function startPayment(event) {
   event.preventDefault();
-  const form = event.target;
-  if (!form.reportValidity()) return;
-  const button = form.querySelector("[type=submit]");
-  button.disabled = true;
-  const old = button.textContent;
-  button.textContent = "Aguarde…";
-  const data = new FormData(form);
+  const form=event.currentTarget,button=form.querySelector('button');
+  const field=name=>form.elements.namedItem(name);
+  const amount=amountFrom(field('amount').value);
+  button.disabled=true;button.textContent='Preparando checkout…';
   try {
-    if(form.id==='launch-draft-form') {
-      const value={};for(const [k,,type] of launchGroups.flatMap(g=>g.fields)) {const raw=data.get(k);value[k]=type==='number'?(raw===''?null:Number(raw)):String(raw||'').trim();}
-      state.launchDraft=await api('real/admin/launch-draft',{method:'PUT',admin:true,body:{value,revision:state.launchDraft.revision}});render();notice('Informações salvas. Você pode continuar depois.');
-    }
-    if(form.id==='admin-test-form') {
-      state.testResult=await api('real/admin/test-flow',{method:'POST',admin:true,body:{pixAmount:parseAmount(data.get('amount')),installments:Number(data.get('installments')),scenario:data.get('scenario'),confirmed:true}});render();
-    }
-    if(form.classList.contains('release-form')) {
-      const op=state.realOperations.operations.find(o=>o.id===data.get('id'));
-      const released=await api('real/admin/release',{method:'POST',admin:true,body:{id:op.id,pixAmount:op.quote.pixAmount,reviewReference:data.get('reference'),confirmed:true}});
-      await loadAsaasAdmin();render();notice(released.status==='AWAITING_LIQUIDITY'?'Pagamento registrado. O Pix aguarda saldo do operador.':'Solicitação registrada. Aguarde a confirmação do Asaas.');
-    }
-    if(form.id==='real-lookup-form') { state.realStatus=null;navigate('real-result?op='+encodeURIComponent(data.get('id'))); }
-    if (form.id === "real-amount-form") {
-      state.realQuote = await api("real/quotes", {
-        method: "POST",
-        body: { pixAmount: parseAmount(data.get("amount")) },
-      });
-      state.realSelected =
-        state.realQuote.options.find((o) => o.recommended) ||
-        state.realQuote.options[0];
-      state.realIdempotency = crypto.randomUUID();
-      navigate("real-confirm");
-    }
-    if (form.id === "real-confirm-form") {
-      const result = await api("real/confirm", {
-        method: "POST",
-        key: state.realIdempotency,
-        body: {
-          quoteId: state.realQuote.id,
-          installments: state.realSelected.installments,
-          name: data.get("name"),
-          email: data.get("email"),
-          cpf: data.get("cpf"),
-          pixKeyType: data.get("pixKeyType"),
-          pixKey: data.get("pixKey"),
-          confirmed: true,
-          termsVersion: "real-v1",
-        },
-      });
-      if (result.checkoutUrl) location.href = result.checkoutUrl;
-      else navigate(`real-result?op=${encodeURIComponent(result.id)}`);
-    }
-    if (form.id === "admin-login") {
-      state.adminToken = data.get("token");
-      try {
-        await loadAdmin();
-        render();
-      } catch (e) {
-        state.adminToken = "";
-        throw e;
-      }
-    }
-    if (form.id === "pricing-form") {
-      const s = structuredClone(state.settings.value);
-      s.gatewayRates = s.gatewayRates.map((_, i) =>
-        Math.round(Number(data.get(`rate-${i}`)) * 10000),
-      );
-      for (const k of [
-        "gatewayFixedFee",
-        "operationalCost",
-        "minimumProfitAmount",
-        "minAmount",
-        "maxAmount",
-      ])
-        s[k] = Math.round(Number(data.get(k)) * 100);
-      for (const k of ["taxRate", "fraudReserve", "minimumProfitRate"])
-        s[k] = Math.round(Number(data.get(k)) * 10000);
-      s.installments = data
-        .get("installments")
-        .split(",")
-        .map((v) => Number(v.trim()));
-      s.maxOperationsPerSession = Number(data.get("maxOperationsPerSession"));
-      s.offers = s.offers.map((o, i) => ({
-        pixAmount: Math.round(Number(data.get(`offer-${i}-amount`)) * 100),
-        installments: Number(data.get(`offer-${i}-count`)),
-        installmentFloor: Math.round(
-          Number(data.get(`offer-${i}-floor`)) * 100,
-        ),
-        featured: data.has(`offer-${i}-featured`),
-      }));
-      state.settings = await api("admin/settings", {
-        method: "PUT",
-        admin: true,
-        body: { value: s, revision: state.settings.revision },
-      });
-      state.bootstrap = await api("bootstrap");
-      render();
-      notice(
-        "Preços salvos. Novas cotações já usam a configuração atualizada.",
-      );
-    }
-  } catch (e) {
-    notice(e.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = old;
+    const productId=field('productId')?.value||null;
+    const quoted=await api('infinitepay/quote',{method:'POST',body:{amount,productId}});
+    const key=crypto.randomUUID();
+    const payload={
+      amount,totalCharge:quoted.quote.totalCharge,productId,
+      name:field('name').value,email:field('email').value,cpf:field('cpf').value,confirmed:true,
+    };
+    if(bootstrap.collectPhone) payload.phone=field('phone').value;
+    const result=await api('infinitepay/create',{method:'POST',body:payload,idempotencyKey:key});
+    if(!result.checkoutUrl) throw Error('O checkout não respondeu. Aguarde um instante e tente novamente.');
+    sessionStorage.setItem('pixai-operation-'+result.id,result.accessToken);
+    location.assign(result.checkoutUrl);
+  } catch(error) {
+    alertUser(error.message);button.disabled=false;button.textContent=(bootstrap.content?.buttonLabel||'Continuar para o pagamento')+' →';
   }
-});
-window.addEventListener("hashchange", render);
-try {
-  state.bootstrap = await api("bootstrap");
-  $('#env-bar').innerHTML='<span class="status-dot"></span><strong>PixAI</strong><span>'+(state.bootstrap.paymentsEnabled?'Confira as condições antes de confirmar.':'Novos pagamentos ainda indisponíveis.')+'</span>';
-} catch (e) {
-  notice(e.message);
-  const bar = $("#env-bar");
-  if (bar)
-    bar.innerHTML =
-      '<span class="status-dot"></span><strong>SERVIÇO INDISPONÍVEL</strong><span>Não foi possível verificar o ambiente. Pagamentos não estão disponíveis.</span>';
 }
-render();
+
+async function resultPage(params) {
+  const id=params.get('op')||'';
+  const token=params.get('token')||sessionStorage.getItem('pixai-operation-'+id)||'';
+  main.innerHTML='<div class="loading">Conferindo o pagamento…</div>';
+  try {
+    if(params.get('transaction_nsu')&&params.get('invoice_slug')) {
+      await api('infinitepay/confirm',{method:'POST',operationToken:token,body:{id,transaction_nsu:params.get('transaction_nsu'),invoice_slug:params.get('invoice_slug')}}).catch(()=>null);
+    }
+    const operation=await api('infinitepay/status?id='+encodeURIComponent(id),{operationToken:token});
+    const complete=['COMPLETED','DELIVERED','PAYMENT_CONFIRMED'].includes(operation.status);
+    const quote=operation.quote||{};
+    main.innerHTML=`<section class="panel centered">
+      <div class="result-head"><div class="result-icon ${complete?'':'pending'}">${complete?'✓':'…'}</div><h1>${complete?'Pagamento confirmado':'Pagamento em processamento'}</h1><p>${complete?'O pagamento do serviço foi registrado com sucesso.':'A InfinitePay ainda está processando ou aguardando o pagamento.'}</p></div>
+      <div class="review-box">
+        <div class="row"><span>Opção</span><strong>${esc(quote.productName||'Serviço')}</strong></div>
+        <div class="row"><span>Serviço</span><strong>${esc(quote.serviceDescription||'Serviço')}</strong></div>
+        <div class="row"><span>Valor pago</span><strong>${money(quote.totalCharge??quote.serviceAmount)}</strong></div>
+        <div class="row"><span>Status</span><strong>${esc(statusLabel[operation.status]||operation.status)}</strong></div>
+        ${operation.payment?`<div class="row"><span>Forma</span><strong>${operation.payment.method==='pix'?'Pix':'Cartão'}${operation.payment.installments>1?' em '+operation.payment.installments+'x':''}</strong></div>`:''}
+      </div>
+      <div class="receipt-id">Identificador: ${esc(operation.id)}</div>
+      <div class="receipt-actions"><button class="btn secondary" onclick="location.reload()">Atualizar status</button><button class="btn" onclick="print()">Imprimir comprovante</button><a class="btn text" href="#home">Novo pagamento</a></div>
+      <p class="fine-print">A confirmação do pagamento não altera o escopo, prazo ou condições do serviço acordados no orçamento ou contrato.</p>
+    </section>`;
+  } catch(error) {
+    main.innerHTML=`<section class="panel centered"><div class="result-head"><div class="result-icon pending">!</div><h1>Não foi possível abrir este pagamento</h1><p>${esc(error.message)}</p></div><a class="btn full" href="#home">Voltar ao início</a></section>`;
+  }
+}
+
+function terms() {
+  main.innerHTML=`<article class="legal"><a class="back" href="#home">← Voltar</a><div class="eyebrow">Termos de uso</div><h1>Pagamento de serviços</h1>
+    <p>Este portal é usado para pagar serviços previamente solicitados, orçados ou contratados. Antes de continuar, o cliente deve conferir a opção, o valor, o nome, o e-mail e o CPF.</p>
+    <h2>Pagamento</h2><p>O pagamento é processado pela InfinitePay. As modalidades, o parcelamento, os custos eventualmente exibidos e a aprovação são definidos no checkout da operadora.</p>
+    <h2>Prestação do serviço</h2><p>A confirmação do pagamento não substitui nem modifica o orçamento, contrato, escopo, prazo ou condições comerciais já acordados entre as partes.</p>
+    <h2>Cancelamento e reembolso</h2><p>Pedidos serão analisados conforme o contrato do serviço, o estágio de execução e a legislação aplicável. O estorno, quando devido, seguirá os prazos e procedimentos da forma de pagamento.</p>
+    <h2>Atendimento</h2><p>Use o canal de atendimento informado no orçamento ou contrato e tenha em mãos a referência e o identificador do pagamento.</p></article>`;
+}
+function privacy() {
+  main.innerHTML=`<article class="legal"><a class="back" href="#home">← Voltar</a><div class="eyebrow">Privacidade</div><h1>Como tratamos seus dados</h1>
+    <p>O portal coleta nome, e-mail, CPF, opção selecionada e valor para criar, identificar e conciliar o pagamento, entregar o serviço, prestar atendimento e cumprir obrigações legais.</p>
+    <h2>Pagamento</h2><p>Os dados do cartão ou da conta usada no pagamento são informados diretamente à InfinitePay e não são armazenados por este site.</p>
+    <h2>Segurança e retenção</h2><p>Os dados de identificação guardados pelo portal são protegidos e mantidos pelo período necessário à execução do serviço, prevenção a fraudes e cumprimento de obrigações legais.</p>
+    <h2>Seus direitos</h2><p>Solicitações de acesso, correção ou eliminação podem ser feitas pelo canal de atendimento informado no orçamento ou contrato, observadas as retenções exigidas por lei.</p></article>`;
+}
+
+function adminLogin() {
+  main.innerHTML=`<section class="panel lookup"><div class="eyebrow">Acesso restrito</div><h1>Administração</h1><p>Informe o token administrativo para acompanhar pagamentos e ajustar a integração.</p><form id="admin-login"><label for="token">Token administrativo</label><input id="token" type="password" autocomplete="current-password" required><button class="btn full mt-18">Entrar</button></form></section>`;
+  document.querySelector('#admin-login').addEventListener('submit',async event=>{
+    event.preventDefault();adminToken=event.currentTarget.token.value;
+    try {await api('infinitepay/admin/config',{admin:true});sessionStorage.setItem('pixai-admin-token',adminToken);adminDashboard();}
+    catch(error){adminToken='';alertUser(error.message);}
+  });
+}
+const contentFields=[
+  ['eyebrow','Chamada superior'],['title','Título principal'],['subtitle','Texto de apresentação'],
+  ['formTitle','Título do formulário'],['formHelp','Orientação do formulário'],
+  ['amountLabel','Rótulo do valor personalizado'],['nameLabel','Rótulo do nome'],['emailLabel','Rótulo do e-mail'],['cpfLabel','Rótulo do CPF'],['cpfNotice','Aviso abaixo do CPF'],['buttonLabel','Texto do botão'],
+];
+function contentEditor(key,label,value) {
+  const wide=['subtitle','formHelp'].includes(key),tag=wide?'textarea':'input';
+  return `<div class="${wide?'wide':''}"><label for="content-${key}">${label}</label>${tag==='textarea'?`<textarea id="content-${key}" data-content="${key}" maxlength="300" required>${esc(value)}</textarea>`:`<input id="content-${key}" data-content="${key}" maxlength="300" value="${esc(value)}" required>`}</div>`;
+}
+function fileToSquareDataUrl(file,size=100,quality=0.82) {
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(Error('Não foi possível ler o arquivo.'));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(Error('Arquivo de imagem inválido.'));
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d');
+        const side=Math.min(img.width,img.height),sx=(img.width-side)/2,sy=(img.height-side)/2;
+        ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function productEditor(product) {
+  return `<div class="product-editor" data-product-row data-id="${esc(product.id)}" data-image="${esc(product.image||'')}">
+    <div class="product-editor-head"><strong>${esc(product.name||'Novo produto')}</strong><button class="btn text remove-product" type="button">Remover</button></div>
+    <div class="product-image-field">
+      <img class="product-image-preview" src="${product.image||PLACEHOLDER_IMAGE}" width="100" height="100" alt="">
+      <div><label class="btn secondary file-label">Escolher imagem (100x100)<input type="file" accept="image/*" data-product-image hidden></label><button class="btn text remove-image" type="button">Remover imagem</button></div>
+    </div>
+    <div class="form-grid">
+      <div><label>Nome</label><input data-product-field="name" maxlength="100" value="${esc(product.name)}" required></div>
+      <div><label>Preço</label><div class="money-field"><span>R$</span><input data-product-field="price" inputmode="decimal" value="${product.price==null?'':(product.price/100).toFixed(2).replace('.',',')}" ${product.customPrice?'disabled':''}></div></div>
+      <div class="wide"><label>Descrição</label><input data-product-field="description" maxlength="160" value="${esc(product.description)}" required></div>
+    </div>
+    <div class="product-checks"><label class="check-label"><input data-product-field="active" type="checkbox" ${product.active?'checked':''}><span>Disponível na página</span></label><label class="check-label"><input data-product-field="customPrice" type="checkbox" ${product.customPrice?'checked':''}><span>Cliente informa o valor</span></label></div>
+  </div>`;
+}
+function wireProductRows() {
+  document.querySelectorAll('[data-product-row]').forEach(row=>{
+    row.querySelector('.remove-product').onclick=()=>row.remove();
+    const custom=row.querySelector('[data-product-field="customPrice"]'),price=row.querySelector('[data-product-field="price"]');
+    custom.onchange=()=>{price.disabled=custom.checked;if(custom.checked)price.value='';};
+    const preview=row.querySelector('.product-image-preview'),fileInput=row.querySelector('[data-product-image]');
+    fileInput.onchange=async()=>{
+      const file=fileInput.files?.[0];
+      if(!file) return;
+      try {
+        const dataUrl=await fileToSquareDataUrl(file);
+        row.dataset.image=dataUrl;
+        preview.src=dataUrl;
+      } catch(error) {alertUser(error.message);}
+      fileInput.value='';
+    };
+    row.querySelector('.remove-image').onclick=()=>{row.dataset.image='';preview.src=PLACEHOLDER_IMAGE;};
+  });
+}
+async function adminDashboard() {
+  main.innerHTML='<div class="loading">Carregando pagamentos…</div>';
+  try {
+    const [configuration,data]=await Promise.all([api('infinitepay/admin/config',{admin:true}),api('infinitepay/admin/operations',{admin:true})]);
+    const operations=data.operations||[],completed=operations.filter(item=>['COMPLETED','DELIVERED','PAYMENT_CONFIRMED'].includes(item.status));
+    const volume=completed.reduce((sum,item)=>sum+(item.quote.totalCharge??item.quote.serviceAmount??0),0);
+    main.innerHTML=`<section class="admin-settings"><div class="admin-top"><div><div class="eyebrow">InfinitePay</div><h1>Painel de pagamentos</h1></div><button id="logout" class="btn secondary">Sair</button></div>
+      <div class="metric-grid"><div class="metric"><span>Pagamentos</span><strong>${operations.length}</strong></div><div class="metric"><span>Confirmados</span><strong>${completed.length}</strong></div><div class="metric"><span>Volume confirmado</span><strong>${money(volume)}</strong></div><div class="metric"><span>Integração</span><strong>${configuration.serverEnabled&&configuration.value.enabled?'Ativa':'Pausada'}</strong></div></div>
+      <form id="config-form">
+        <section class="panel mt-25"><h2>Pagamento e limites</h2><p>Todas as alterações são aplicadas à página pública após salvar.</p><div class="form-grid">
+          <div><label for="handle">InfiniteTag</label><input id="handle" name="handle" maxlength="80" value="${esc(configuration.value.handle)}" required><p class="field-help">Sem o símbolo $.</p></div>
+          <div><label for="service-label">Rótulo do catálogo</label><input id="service-label" name="service-label" maxlength="100" value="${esc(configuration.value.serviceLabel)}" required></div>
+          <div><label for="min-amount">Valor mínimo</label><div class="money-field"><span>R$</span><input id="min-amount" name="min-amount" inputmode="decimal" value="${(configuration.value.minAmount/100).toFixed(2).replace('.',',')}" required></div></div>
+          <div><label for="max-amount">Valor máximo</label><div class="money-field"><span>R$</span><input id="max-amount" name="max-amount" inputmode="decimal" value="${(configuration.value.maxAmount/100).toFixed(2).replace('.',',')}" required></div></div>
+          <div><label for="gateway-rate">Taxa estimada do cartão (%)</label><input id="gateway-rate" name="gateway-rate" inputmode="decimal" value="${(configuration.value.gatewayRatePpm/10000).toFixed(2).replace('.',',')}" required><p class="field-help">Usada para calcular o valor final cobrado. Ajuste conforme a tarifa real da sua conta InfinitePay.</p></div>
+          <div><label for="min-margin">Margem mínima de lucro (%)</label><input id="min-margin" name="min-margin" inputmode="decimal" value="${(configuration.value.minMarginPpm/10000).toFixed(2).replace('.',',')}" required><p class="field-help">Somada ao preço de cada serviço antes de enviar ao checkout. Mínimo de 30%.</p></div>
+        </div><label class="check-label"><input id="enabled" name="enabled" type="checkbox" ${configuration.value.enabled?'checked':''}><span>Aceitar novos pagamentos</span></label>
+        <label class="check-label"><input id="collect-phone" name="collect-phone" type="checkbox" ${configuration.value.collectPhone?'checked':''}><span>Pedir celular no formulário (envia para a InfinitePay)</span></label></section>
+        <section class="panel mt-25"><h2>Textos e campos da página</h2><div class="form-grid">${contentFields.map(([key,label])=>contentEditor(key,label,configuration.value.content[key])).join('')}</div></section>
+        <section class="panel mt-25"><div class="admin-top"><div><h2>Produtos e serviços</h2><p>Crie preços fixos ou deixe o cliente informar o valor.</p></div><button id="add-product" class="btn secondary" type="button">+ Adicionar</button></div><div id="product-list">${configuration.value.products.map(productEditor).join('')}</div></section>
+        <button class="btn full save-admin" type="submit">Salvar todas as alterações</button>
+      </form>
+      <section class="panel mt-25"><h2>Pagamentos e entregas</h2><div class="table-wrap">${operations.length?`<table><thead><tr><th>Data</th><th>Produto</th><th>Serviço</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody>${operations.map(item=>`<tr><td>${when(item.createdAt)}</td><td>${esc(item.quote.productName||'Registro anterior')}</td><td>${esc(item.quote.serviceDescription||'Registro anterior')}</td><td>${money(item.quote.totalCharge??item.quote.serviceAmount)}</td><td>${esc(statusLabel[item.status]||item.status)}${item.deliveredAt?`<br><small>${when(item.deliveredAt)}</small>`:''}</td><td><button class="btn text detail" data-id="${esc(item.id)}">Cliente</button>${item.status==='COMPLETED'?`<button class="btn text delivery" data-id="${esc(item.id)}">Confirmar entrega</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum pagamento registrado.</div>'}</div></section>
+      <dialog id="delivery-dialog" class="delivery-dialog"><form id="delivery-form" method="dialog"><div class="admin-top"><h2>Validar entrega</h2><button class="btn text" value="cancel" type="button" id="close-delivery">Fechar</button></div><p>Registre quem conferiu e o comprovante, protocolo ou observação da entrega.</p><input type="hidden" name="id"><label for="delivery-operator">Responsável</label><input id="delivery-operator" name="operator" maxlength="100" required><label for="delivery-reference" class="mt-16">Comprovante ou observação</label><textarea id="delivery-reference" name="reference" maxlength="200" required></textarea><label class="check-label"><input name="confirmed" type="checkbox" required><span>Confirmo que o produto ou serviço foi entregue ao cliente.</span></label><button class="btn full" type="submit">Validar entrega</button></form></dialog>
+    </section>`;
+    document.querySelector('#logout').onclick=()=>{sessionStorage.removeItem('pixai-admin-token');adminToken='';adminLogin();};
+    wireProductRows();
+    document.querySelector('#add-product').onclick=()=>{
+      const list=document.querySelector('#product-list'),wrapper=document.createElement('div');
+      wrapper.innerHTML=productEditor({id:'produto-'+Date.now().toString(36),name:'Novo produto',description:'Descrição do produto ou serviço',price:configuration.value.minAmount,active:true,customPrice:false});
+      list.append(wrapper.firstElementChild);wireProductRows();
+    };
+    document.querySelector('#config-form').addEventListener('submit',async event=>{
+      event.preventDefault();
+      try {
+        const elements=event.currentTarget.elements;
+        const content=Object.fromEntries(contentFields.map(([key])=>[key,document.querySelector(`[data-content="${key}"]`).value]));
+        const products=[...document.querySelectorAll('[data-product-row]')].map(row=>{
+          const field=name=>row.querySelector(`[data-product-field="${name}"]`),customPrice=field('customPrice').checked;
+          return {id:row.dataset.id,name:field('name').value,description:field('description').value,price:customPrice?null:amountFrom(field('price').value),active:field('active').checked,customPrice,image:row.dataset.image||''};
+        });
+        await api('infinitepay/admin/config',{method:'PUT',admin:true,body:{revision:configuration.revision,value:{
+          handle:elements.namedItem('handle').value,serviceLabel:elements.namedItem('service-label').value,enabled:elements.namedItem('enabled').checked,
+          minAmount:amountFrom(elements.namedItem('min-amount').value),maxAmount:amountFrom(elements.namedItem('max-amount').value),
+          gatewayRatePpm:ppmFrom(elements.namedItem('gateway-rate').value),minMarginPpm:ppmFrom(elements.namedItem('min-margin').value),
+          collectPhone:elements.namedItem('collect-phone').checked,content,products,
+        }}});
+        alertUser('Página, campos e produtos atualizados.');adminDashboard();
+      }
+      catch(error){alertUser(error.message);}
+    });
+    document.querySelectorAll('.detail').forEach(button=>button.onclick=async()=>{
+      try {
+        const detail=await api('infinitepay/admin/recipient',{method:'POST',admin:true,body:{id:button.dataset.id}});
+        const phone=detail.phone?` — Celular ${detail.phone.replace(/(\d{2})(\d{4,5})(\d{4})/,'($1) $2-$3')}`:'';
+        alertUser(`${detail.name} — ${detail.email} — CPF ${detail.cpf||'não registrado'} — ${detail.serviceDescription||'Serviço'}${phone}`);
+      }
+      catch(error){alertUser(error.message);}
+    });
+    const deliveryDialog=document.querySelector('#delivery-dialog'),deliveryForm=document.querySelector('#delivery-form');
+    document.querySelector('#close-delivery').onclick=()=>deliveryDialog.close();
+    document.querySelectorAll('.delivery').forEach(button=>button.onclick=()=>{deliveryForm.reset();deliveryForm.elements.namedItem('id').value=button.dataset.id;deliveryDialog.showModal();});
+    deliveryForm.addEventListener('submit',async event=>{
+      event.preventDefault();const elements=event.currentTarget.elements;
+      try {await api('infinitepay/admin/delivered',{method:'POST',admin:true,body:{id:elements.namedItem('id').value,operator:elements.namedItem('operator').value,reference:elements.namedItem('reference').value,confirmed:elements.namedItem('confirmed').checked}});deliveryDialog.close();alertUser('Entrega validada.');adminDashboard();}
+      catch(error){alertUser(error.message);}
+    });
+  } catch(error) {
+    if(/obrigatório|401/i.test(error.message)){sessionStorage.removeItem('pixai-admin-token');adminToken='';adminLogin();} else {main.innerHTML=`<div class="notice error">${esc(error.message)}</div>`;}
+  }
+}
+
+function route() {
+  const [name='home',query='']=location.hash.slice(1).split('?');
+  const params=new URLSearchParams(query);
+  if(adminPage) return adminToken?adminDashboard():adminLogin();
+  if(name==='terms') return terms();
+  if(name==='privacy') return privacy();
+  if(name==='real-result') return resultPage(params);
+  home();
+}
+
+window.addEventListener('hashchange',route);
+api('infinitepay/bootstrap').then(data=>{bootstrap=data;setEnv();route();}).catch(error=>{setEnv();home();alertUser(error.message);});

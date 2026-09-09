@@ -1,59 +1,24 @@
-# PixAI / Pixaí — plataforma de avaliação
+# PixAI — portal de pagamento de serviços
 
-**Preparação Asaas:** adaptador, conciliação, controle de capital próprio e painel operacional adicionados. Credenciais de produção configuradas somente no servidor; novas cobranças continuam desativadas. Leia [LAUNCH.md](LAUNCH.md) para o estado atual, decisões de capital (R$ 1.000, reserva zero), margem sobre receita e pendências de lançamento. A descrição da demonstração abaixo refere-se ao fluxo sandbox, que continua disponível.
+Aplicação web para cobrar serviços previamente orçados ou contratados. O cliente seleciona uma opção, informa nome, e-mail e CPF — além do valor quando escolher a opção personalizada — e conclui o pagamento no checkout hospedado da InfinitePay. O celular também pode ser coletado no portal e enviado pronto para o checkout, evitando que a InfinitePay peça esse dado de novo; pode ser desligado pelo painel.
 
-Nova experiência web para Pix pago no cartão, sem conta ou senha tradicional.
+## Fluxo em produção
 
-**Teste online:** https://pixai-teste.offlucas.chatgpt.site/
+- Valores permitidos: R$ 20 a R$ 250.
+- InfiniteTag: `lucas-banza` (sem `$` na integração).
+- O valor exibido ao cliente já é o valor final enviado ao checkout: preço do serviço mais a taxa estimada do cartão e a margem mínima de lucro (30% por padrão, ajustável no painel).
+- Pix e cartão são oferecidos conforme a configuração da conta InfinitePay.
+- O site nunca recebe número do cartão ou CVV.
+- Webhook e retorno do checkout acionam uma consulta `payment_check`; nenhum campo `paid` recebido por webhook é aceito sem conferência direta.
+- Dados de identificação persistidos são criptografados.
+- A conclusão do pagamento é separada do escopo e do prazo do serviço, que continuam regidos pelo orçamento ou contrato.
 
-**Estado:** sandbox funcional com servidor e banco persistente. Não é uma operação financeira em produção. Não há cobrança, Pix, KYC, 3DS ou e-mail reais. Os formulários usam dados fictícios e a API rejeita campos de cartão/documento.
+## Operação
 
-## O que funciona
+O painel em `/admin.html` usa `ADMIN_TOKEN` e permite pausar novas cobranças, ajustar a InfiniteTag, limites, todos os textos e rótulos da página, além de criar, editar, ativar ou remover produtos e serviços com preço fixo ou valor livre. Pagamentos confirmados podem ter a entrega validada com responsável, data e comprovante ou observação. O recebimento segue o plano configurado na conta InfinitePay; o sistema não faz repasse, saque ou conversão de cartão em Pix.
 
-- Home com as quatro ofertas solicitadas, outro valor e opções de 1 a 12 parcelas.
-- Pricing Engine exclusivo do servidor, dinheiro em centavos, taxas em partes por milhão e aritmética inteira. Margem mínima de 30%, piso de lucro, arredondamento para cima em parcelas terminadas em R$ 0,90 e conferência dos custos arredondados individualmente.
-- Revisão explícita antes da simulação; cotação de dez minutos, vinculada à sessão e à versão dos preços, recalculada ao confirmar.
-- Cenários de aprovação, recusa, revisão manual e cartão aprovado com falha no Pix. Recibo identificável e exportável como texto.
-- Consulta com desafio de uso único, expiração, limite de tentativas e isolamento por sessão. **O código aparece na tela: não é OTP por e-mail nem autenticação de produção.**
-- Painel administrativo protegido por segredo do servidor, métricas de teste, edição persistente de preços e área de integrações.
-- Cookie HttpOnly/Secure/SameSite, CSP, validação de origem, SQL parametrizado, rate limiting persistente, idempotência, trilha de auditoria e bloqueio de todas as rotas financeiras reais.
-- Logo oficial original preservada em `public/assets/pixai-logo-oficial.png` e usada no cabeçalho, rodapé e recibo visual.
+O catálogo inicial tem cinco opções editáveis: R$ 20, R$ 50, R$ 100, R$ 250 e uma opção de valor personalizado.
 
-## Executar localmente
+Para executar localmente: `npm run dev`. Para validar: `npm run check`.
 
-Requer Node.js 24 ou superior.
-
-```sh
-npm ci
-cp .env.example .env
-# Gere ADMIN_TOKEN aleatório com pelo menos 32 caracteres em .env.
-npm run dev
-```
-
-Acesse `http://127.0.0.1:4173`. SQLite local fica em `.local/pixai.sqlite`, fora do Git. Na instalação feita nesta máquina, `.env` já contém a chave administrativa aleatória. Nunca compartilhe ou commite esse arquivo.
-
-```sh
-npm test
-npm run build
-npm run db:generate
-```
-
-Os testes cobrem margem, ofertas, arredondamento, taxas do parceiro, idempotência, consentimento, sessões isoladas, códigos expirados/usados, cenários, conflitos de preços, bloqueio de produção e proteção de rotas. A geração de migrações é necessária apenas após mudar `db/schema.ts`; não reescreva migrações já publicadas.
-
-## Administração
-
-Abra `/#admin` no site e informe o valor de `ADMIN_TOKEN` configurado no servidor. No ambiente local desta entrega, ele está no arquivo `.env`, que é ignorado pelo Git. O token não é pré-preenchido, incluído em URLs nem salvo no navegador. Encerrar o acesso ou fechar a aba remove a credencial da memória.
-
-Os percentuais do painel são apresentados em %. Internamente, 30% = 300000 ppm. Novos preços invalidam cotações anteriores. As ofertas são pisos comerciais: o motor pode elevar a parcela para preservar a margem. Reduzir a margem abaixo de 30% é proibido. Custos iniciais zerados não significam isenção tributária ou custo real zero.
-
-## Publicação
-
-Frontend e API compartilham a origem no Sites, com Worker e D1. `.openai/hosting.json` guarda somente o identificador do projeto e o nome lógico de D1. O build gera `dist/client`, `dist/server/index.js` e migrações em `dist/.openai/drizzle`.
-
-O GitHub Pages não executa o backend. O `index.html` da raiz encaminha para o novo site. A aplicação publicada usa `public/index.html`. O CI verifica testes e build; a publicação do Worker é feita pelo Sites a partir de uma versão salva, sem segredos no repositório.
-
-## Próximos passos para operações reais
-
-Consulte [PARTNERS.md](PARTNERS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md) e [TASKS.md](TASKS.md). Não há interruptor que transforme esta demonstração em operação real apenas inserindo chaves. É necessário implementar o adaptador oficial do parceiro escolhido, testar e homologar.
-
-O código antigo, documentação e esquema Supabase foram preservados em `docs/legacy`. **Não aplique o esquema antigo e não reative seu runtime**: ele permitia histórico simulado controlado pelo cliente. Os dados existentes do Supabase não foram acessados, alterados nem excluídos.
+Veja [LAUNCH.md](LAUNCH.md) para a configuração de publicação e [SECURITY.md](SECURITY.md) para os controles aplicados.

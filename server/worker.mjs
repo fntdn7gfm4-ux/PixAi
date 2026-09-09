@@ -21,6 +21,7 @@ import {
   sendPixTransfer,
   verifyAsaasWebhookToken,
 } from "./asaas.mjs";
+import { infiniteRoutes } from "./infinitepay-routes.mjs";
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -60,6 +61,17 @@ const auditRow = (db, action, subject, detail = {}) =>
     JSON.stringify(detail),
     Date.now(),
   );
+const infiniteApi = infiniteRoutes({
+  json,
+  fail,
+  run,
+  first,
+  readBody,
+  only,
+  auditRow,
+  limited,
+  settings,
+});
 async function limited(db, key, max, window = 60000) {
   const bucket = Math.floor(Date.now() / window),
     id = `${key}:${bucket}`;
@@ -1072,7 +1084,9 @@ export default {
     const ctx = {};
     try {
       const pathname = new URL(request.url).pathname;
-      if (pathname.startsWith("/api/real/"))
+      if (pathname.startsWith("/api/infinitepay/"))
+        response = await infiniteApi(request, env, pathname);
+      else if (pathname.startsWith("/api/real/"))
         response = await realApi(request, env, ctx, pathname);
       else if (pathname.startsWith("/api/"))
         response = await api(request, env, ctx);

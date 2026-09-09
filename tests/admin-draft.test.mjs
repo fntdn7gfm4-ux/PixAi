@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {harness} from './helpers.mjs';
-test('pendências privadas aceitam salvamento parcial, preservam versão e não ativam pagamentos',async()=>{
+test('cadastro privado aceita dados de serviços, preserva versão e não ativa pagamentos legados',async()=>{
   const h=harness(),c=h.client();h.env.APP_ENV='production';
   assert.equal((await c('real/admin/launch-draft')).status,401);
   const initial=await c('real/admin/launch-draft',{admin:true});assert.equal(initial.data.revision,0);
   assert.match(initial.data.value.termsText,/minuta/);
-  const body={value:{tradeName:'PixAI',supportEmail:'contato@example.com',minimumMargin:30,capitalLimit:1000,balanceReserve:0},revision:0};
+  const body={value:{tradeName:'PixAI',supportEmail:'contato@example.com',infiniteTag:'lucas-banza',serviceCatalog:'Consultoria e serviços digitais'},revision:0};
   const opt={method:'PUT',admin:true,headers:{origin:'https://pixai.test'},body};
   assert.equal((await c('real/admin/launch-draft',opt)).status,200);
   assert.equal((await c('real/admin/launch-draft',opt)).status,409);
